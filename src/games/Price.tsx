@@ -1,4 +1,17 @@
-import React, { useState } from "react";
+import Sprite from "../render/Sprite";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  withSequence,
+  cancelAnimation,
+  useReducedMotion,
+} from "react-native-reanimated";
+import { Backdrop } from "../render/Backdrop";
+import { Particles, StateCard, Achievement } from "../render/fx";
+import { useSfx } from "../render/sound";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Image, Pressable } from "react-native";
 import { prices, type Player } from "../model";
 import { Button, C, s } from "../ui";
@@ -17,6 +30,35 @@ export default function Price({
     [locked, setLocked] = useState(false),
     [photoFailed, setPhotoFailed] = useState(false),
     [attempt, setAttempt] = useState(0);
+  const float = useSharedValue(0),
+    seal = useSharedValue(0),
+    reduced = useReducedMotion(),
+    sound = useSfx();
+  useEffect(() => {
+    if (ready && !reduced)
+      float.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 2400 }),
+          withTiming(0, { duration: 2400 }),
+        ),
+        -1,
+        false,
+      );
+    return () => cancelAnimation(float);
+  }, [ready, reduced]);
+  const floatStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: float.value * -5 },
+      { scale: 1 + float.value * 0.015 },
+    ],
+  }));
+  const sealStyle = useAnimatedStyle(() => ({
+    opacity: seal.value,
+    transform: [
+      { scale: 1.5 - seal.value * 0.5 },
+      { rotate: `${-16 + seal.value * 8}deg` },
+    ],
+  }));
   const item = prices[round % prices.length],
     valid =
       guess.trim() !== "" &&
@@ -35,7 +77,7 @@ export default function Price({
       />
     );
   return (
-    <View style={{ gap: 16 }}>
+    <StateCard>
       <View style={[s.row, { justifyContent: "space-between" }]}>
         <Badge>THE LUXURY LINEUP</Badge>
         <Text style={s.eyebrow}>
@@ -58,31 +100,94 @@ export default function Price({
             justifyContent: "center",
           }}
         >
-          {photoFailed ? (
-            <View style={{ padding: 25, gap: 10 }}>
-              <Text style={s.body}>
-                The product photo couldn’t load. Internet access is needed for
-                designer photos.
-              </Text>
-              <Button
-                secondary
-                onPress={() => {
-                  setPhotoFailed(false);
-                  setAttempt((v) => v + 1);
+          <Backdrop theme="studio" height={215} />
+          <Animated.View
+            style={[
+              {
+                width: "100%",
+                height: "100%",
+                alignItems: "center",
+                justifyContent: "center",
+              },
+              floatStyle,
+            ]}
+          >
+            {photoFailed ? (
+              <View style={{ padding: 25, gap: 10 }}>
+                <Text style={s.body}>
+                  The product photo couldn’t load. Internet access is needed for
+                  designer photos.
+                </Text>
+                <Button
+                  secondary
+                  onPress={() => {
+                    setPhotoFailed(false);
+                    setAttempt((v) => v + 1);
+                  }}
+                >
+                  Retry photo
+                </Button>
+              </View>
+            ) : (
+              <Image
+                key={attempt}
+                accessibilityLabel={`${item.brand} ${item.name} product photograph`}
+                source={{ uri: item.photo }}
+                resizeMode="contain"
+                style={{ width: "100%", height: "100%" }}
+                onError={() => setPhotoFailed(true)}
+              />
+            )}
+          </Animated.View>
+          <View
+            pointerEvents="none"
+            style={{
+              position: "absolute",
+              bottom: 17,
+              width: 175,
+              height: 10,
+              borderRadius: 100,
+              backgroundColor: "#351E28",
+              opacity: 0.08,
+            }}
+          />
+          <Particles event={locked ? 1 : 0} x={150} y={100} />
+          <View
+            pointerEvents="none"
+            style={{ position: "absolute", bottom: 9, right: 10 }}
+          >
+            <Sprite
+              {...player}
+              state={locked ? "winning" : "interacting"}
+              size={44}
+            />
+          </View>
+          {locked && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                {
+                  position: "absolute",
+                  padding: 12,
+                  borderWidth: 3,
+                  borderColor: C.orange,
+                  borderRadius: 10,
+                  backgroundColor: "#F9F8F2E8",
+                },
+                sealStyle,
+              ]}
+            >
+              <Text
+                style={{
+                  color: C.orange,
+                  fontWeight: "900",
+                  letterSpacing: 4,
+                  fontSize: 24,
                 }}
               >
-                Retry photo
-              </Button>
-            </View>
-          ) : (
-            <Image
-              key={attempt}
-              accessibilityLabel={`${item.brand} ${item.name} product photograph`}
-              source={{ uri: item.photo }}
-              resizeMode="contain"
-              style={{ width: "100%", height: "100%" }}
-              onError={() => setPhotoFailed(true)}
-            />
+                SEALED
+              </Text>
+            </Animated.View>
           )}
           <View style={{ position: "absolute", top: 14, left: 14 }}>
             <Badge color={C.paper}>REAL ITEM · REAL RETAIL</Badge>
@@ -118,6 +223,8 @@ export default function Price({
           placeholder="0.00"
           style={{
             flex: 1,
+            minWidth: 0,
+            width: 0,
             fontSize: 35,
             fontWeight: "900",
             color: C.ink,
@@ -128,6 +235,7 @@ export default function Price({
       </View>
       {locked ? (
         <>
+          <Achievement>GUESS LOCKED</Achievement>
           <Text style={s.body}>
             Sealed. No peeking at the price until everyone has guessed.
           </Text>
@@ -145,7 +253,14 @@ export default function Price({
           </Button>
         </>
       ) : (
-        <Button disabled={!valid} onPress={() => setLocked(true)}>
+        <Button
+          disabled={!valid}
+          onPress={() => {
+            setLocked(true);
+            seal.value = withTiming(1, { duration: 240 });
+            sound("impact");
+          }}
+        >
           Lock in guess
         </Button>
       )}
@@ -153,6 +268,6 @@ export default function Price({
         US retail snapshot · 10 Nov 2026 · before tax. Prices vary by market.
         Photo © Gucci. Source links appear in the final reveal.
       </Text>
-    </View>
+    </StateCard>
   );
 }

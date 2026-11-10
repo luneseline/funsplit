@@ -1,3 +1,4 @@
+import { SoundButton } from "./src/render/sound";
 import React, { useEffect, useRef, useState } from "react";
 import {
   View,
@@ -322,7 +323,10 @@ export default function App() {
               }}
             >
               <View style={[s.row, { justifyContent: "space-between" }]}>
-                <MusicButton music={music} />
+                <View style={s.row}>
+                  <MusicButton music={music} />
+                  <SoundButton />
+                </View>
                 <Pressable
                   accessibilityLabel="Close dialog"
                   onPress={onClose}
@@ -395,7 +399,10 @@ export default function App() {
               </Chip>
             ))}
           </View>
-          <MusicButton music={music} />
+          <View style={s.row}>
+            <MusicButton music={music} />
+            <SoundButton />
+          </View>
         </View>
         {!!music.error && <Text style={s.muted}>{music.error}</Text>}
         {!!error && (
@@ -468,7 +475,11 @@ export default function App() {
                   </Button>
                   <View style={{ flexDirection: "row", marginLeft: 6 }}>
                     <View style={{ transform: [{ rotate: "-12deg" }] }}>
-                      <Character animated size={55} color={C.orange} />
+                      <Character
+                        animated={!session && !setup && !roomModal && !focus}
+                        size={55}
+                        color={C.orange}
+                      />
                     </View>
                     <View
                       style={{
@@ -477,7 +488,7 @@ export default function App() {
                       }}
                     >
                       <Character
-                        animated
+                        animated={!session && !setup && !roomModal && !focus}
                         size={55}
                         face="ghost"
                         color={C.blue}

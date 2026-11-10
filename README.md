@@ -29,6 +29,14 @@ Use **Connect our phones**, enter a reachable server URL (for example `http://19
 
 The host starts and configures games. Each player controls their own turn from their own screen. Other screens show who is playing. Most connected games use individual turns. **Tap tap, broke is a shared-screen knockout bracket:** two friends play simultaneously on the host’s phone, then the host posts the whole bracket’s results to the room. Disconnecting a player returns the room to its lobby and transfers hosting if needed. Rooms live in server memory and expire after six hours. This server is a working demo, not a deployed service.
 
+## Graphics upgrade (v0.3)
+
+Every game now uses the shared motion/effects layer. Continuous flight, billiards, crane aim and crosshair movement use Reanimated shared values and frame callbacks instead of forcing React redraws. Gameplay constants, scores and multiplayer rules are preserved. Effects include articulated character states, layered scenery, shaded materials, bounded particles, animated counters, checkpoint pulses, bow/cue recoil, transitions and six original event-driven sound cues. Use **SFX ON/OFF** separately from the music toggle.
+
+Native reward bursts use a small bundled Lottie animation. The web equivalent uses Reanimated particles. Skia, Rive and sprite-sheet alternatives were evaluated; see the [per-game inspection and renderer decisions](docs/GRAPHICS.md).
+
+New gameplay captures: [tower](docs/images/graphics/tower.png), [race](docs/images/graphics/race.png), [price](docs/images/graphics/price.png), [flight](docs/images/graphics/flight.png), [wheel](docs/images/graphics/wheel.png), [pool](docs/images/graphics/pool.png), [archery](docs/images/graphics/archery.png).
+
 ## Included
 
 - **Stack attack:** crane drops, animated falling blocks, perfect landings, falling offcuts, overlap trimming, a 30-second limit and 12-floor cap.
@@ -57,6 +65,8 @@ npx expo start --go --clear
 
 If you run connected rooms, restart `npm run server` too; the new race-bracket event needs the updated server.
 
+Native dependencies match Expo SDK 58. Expo Go must support that SDK; a custom development client needs rebuilding after adding Reanimated/Worklets/Lottie. This upgrade was checked by JavaScript bundle export, not by physical iOS/Android gameplay profiling.
+
 ## Validate
 
 ```sh
@@ -73,6 +83,7 @@ Browser tests default to `/usr/bin/chromium`; set `CHROMIUM_PATH` for another in
 - [Product and experience plan](docs/PRODUCT.md)
 - [Architecture and engineering roadmap](docs/ARCHITECTURE.md)
 - [Photos, price sources and original music](docs/ASSETS.md)
+- [Graphics architecture, per-game audit and preservation tests](docs/GRAPHICS.md)
 
 Updated game screens:
 

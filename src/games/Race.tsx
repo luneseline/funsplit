@@ -1,11 +1,19 @@
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedReaction,
+  withTiming,
+  withSpring,
+  withSequence,
+  cancelAnimation,
+} from "react-native-reanimated";
+import { Backdrop } from "../render/Backdrop";
+import Sprite from "../render/Sprite";
+import { Counter, Particles, StateCard, Achievement } from "../render/fx";
+import { useSfx } from "../render/sound";
+import Reward from "../render/Reward";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  Platform,
-  Animated,
-  useWindowDimensions,
-} from "react-native";
+import { View, Text, Platform, useWindowDimensions } from "react-native";
 import { type Player } from "../model";
 import { createBracket, advanceBracket, bracketScores } from "../bracket";
 import { Button, C, s, Character, buzz } from "../ui";
@@ -18,6 +26,7 @@ export default function Race({
   players: Player[];
   onDone: (scores: Record<string, number>) => void;
 }) {
+  const sound = useSfx();
   const compact = useWindowDimensions().height < 760;
   const [bracket, setBracket] = useState(() =>
       createBracket(players.map((p) => p.id)),
@@ -37,11 +46,9 @@ export default function Race({
       start: 0,
       winner: null as number | null,
       sudden: false,
+      lastHud: -1,
     }),
-    move = [
-      useRef(new Animated.Value(0)).current,
-      useRef(new Animated.Value(0)).current,
-    ];
+    move = [useSharedValue(0), useSharedValue(0)];
   const pair = bracket.queue
     .slice(0, 2)
     .map((id) => players.find((p) => p.id === id)!);
@@ -60,6 +67,7 @@ export default function Race({
           start: Date.now(),
           winner: null,
           sudden: false,
+          lastHud: -1,
         };
         setPhase("race");
       }
@@ -70,11 +78,17 @@ export default function Race({
     if (phase !== "race") return;
     const timer = setInterval(() => {
       const sec = (Date.now() - state.current.start) / 1000;
-      setElapsed(sec);
+      const second = Math.floor(sec);
+      if (state.current.lastHud !== second) {
+        state.current.lastHud = second;
+        setElapsed(second);
+      }
       if (sec >= 20) {
         if (state.current.counts[0] === state.current.counts[1]) {
-          state.current.sudden = true;
-          setSudden(true);
+          if (!state.current.sudden) {
+            state.current.sudden = true;
+            setSudden(true);
+          }
         } else
           finish(state.current.counts[0] > state.current.counts[1] ? 0 : 1);
       }
@@ -88,22 +102,18 @@ export default function Race({
     setWinner(i);
     setPhase("finish");
     buzz(true);
-    Animated.spring(move[i], {
-      toValue: 1.08,
-      friction: 4,
-      useNativeDriver: true,
-    }).start();
+    move[i].value = withSpring(1.08, { damping: 9, stiffness: 150 });
+    sound("reward");
   }
   function tap(i: number, n = 1) {
     const v = state.current;
     if (v.phase !== "race") return;
     v.counts[i] += n;
     setCounts([...v.counts] as [number, number]);
-    Animated.timing(move[i], {
-      toValue: Math.min(1, v.counts[i] / FINISH),
+    move[i].value = withTiming(Math.min(1, v.counts[i] / FINISH), {
       duration: 100,
-      useNativeDriver: true,
-    }).start();
+    });
+    sound(v.counts[i] % 15 === 0 ? "reward" : "tap");
     if (v.counts[i] % 15 === 0) buzz();
     if (v.counts[i] >= FINISH || v.sudden) finish(i);
   }
@@ -114,7 +124,10 @@ export default function Race({
     setElapsed(0);
     setWinner(null);
     setSudden(false);
-    move.forEach((v) => v.setValue(0));
+    move.forEach((v) => {
+      v.value = 0;
+    });
+    sound("whoosh");
     setPhase("countdown");
   }
   function next() {
@@ -130,7 +143,8 @@ export default function Race({
       <View style={{ gap: 20, alignItems: "center", padding: 20 }}>
         <Burst />
         <Badge>BRACKET CHAMPION</Badge>
-        <Character {...champ} animated size={150} />
+        <Reward />
+        <Sprite {...champ} state="winning" size={130} />
         <Text style={[s.title, { fontSize: 32, textAlign: "center" }]}>
           Champion: {champ.name}
         </Text>
@@ -172,6 +186,7 @@ export default function Race({
         {pair[1].name}
       </Text>
       <View
+        testID="scene-race"
         onLayout={(e) =>
           setTrackWidth(Math.max(140, e.nativeEvent.layout.width - 100))
         }
@@ -185,7 +200,13 @@ export default function Race({
           overflow: "hidden",
         }}
       >
-        <Text style={[s.eyebrow, { paddingHorizontal: 16, marginBottom: 12 }]}>
+        <Backdrop theme="stadium" height={260} />
+        <Text
+          style={[
+            s.eyebrow,
+            { paddingHorizontal: 16, marginBottom: 12, color: C.paper },
+          ]}
+        >
           THE BROKE GRAND PRIX
         </Text>
         {pair.map((p, i) => (
@@ -197,26 +218,19 @@ export default function Race({
               borderStyle: "dashed",
               borderColor: C.ink,
               justifyContent: "center",
+              backgroundColor: i === 0 ? "#A9C4D477" : "#A0B3AA77",
             }}
           >
             {[0.25, 0.5, 0.75].map((f, j) => (
-              <View
+              <Checkpoint
                 key={f}
-                style={{
-                  position: "absolute",
-                  left: 40 + trackWidth * f,
-                  top: 0,
-                  bottom: 0,
-                  borderLeftWidth: 1,
-                  borderStyle: "dashed",
-                  borderColor: C.sage,
-                }}
-              >
-                <Text style={{ fontSize: 8, color: C.ink, top: 3 }}>
-                  CP{j + 1}
-                </Text>
-              </View>
+                move={move[i]}
+                fraction={f}
+                left={40 + trackWidth * f}
+                label={j + 1}
+              />
             ))}
+
             <View
               style={{
                 position: "absolute",
@@ -240,28 +254,21 @@ export default function Race({
                 />
               ))}
             </View>
-            <Animated.View
-              style={{
-                marginLeft: 10,
-                alignSelf: "flex-start",
-                transform: [
-                  {
-                    translateX: move[i].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, trackWidth],
-                    }),
-                  },
-                  {
-                    rotate:
-                      phase === "race"
-                        ? `${Math.sin(counts[i]) * 8}deg`
-                        : "0deg",
-                  },
-                ],
-              }}
-            >
-              <Character {...p} mood="determined" size={compact ? 43 : 58} />
-            </Animated.View>
+            <Runner
+              player={p}
+              move={move[i]}
+              trackWidth={trackWidth}
+              state={
+                phase === "finish"
+                  ? winner === i
+                    ? "winning"
+                    : "losing"
+                  : phase === "race"
+                    ? "moving"
+                    : "idle"
+              }
+              size={compact ? 43 : 58}
+            />
           </View>
         ))}
         <View style={[s.row, { justifyContent: "space-between", padding: 12 }]}>
@@ -344,15 +351,18 @@ export default function Race({
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 4,
+                shadowColor: C.ink,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 0,
                 ...(Platform.OS === "web"
                   ? ({ touchAction: "none", userSelect: "none" } as any)
                   : {}),
               }}
             >
+              <TapRipple count={counts[i]} />
               <Text style={[s.eyebrow, { textAlign: "center" }]}>{p.name}</Text>
-              <Text style={{ fontSize: 34, fontWeight: "900", color: C.ink }}>
-                {counts[i]}
-              </Text>
+              <Counter value={counts[i]} size={34} />
               <Text style={s.eyebrow}>TAP TAP!</Text>
               <Text style={{ fontSize: 10, color: C.ink }}>
                 CP {Math.min(3, Math.floor(counts[i] / 15))}/3
@@ -382,5 +392,102 @@ export default function Race({
         </Text>
       )}
     </View>
+  );
+}
+
+function Runner({ player, move, trackWidth, state, size }: any) {
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: move.value * trackWidth }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[{ marginLeft: 10, alignSelf: "flex-start" }, style]}
+    >
+      {state === "moving" && (
+        <View style={{ position: "absolute", left: -15, top: 22, gap: 5 }}>
+          {[15, 10, 18].map((w, i) => (
+            <View
+              key={i}
+              style={{
+                width: w,
+                height: 2,
+                backgroundColor: "#FFF4CB",
+                opacity: 0.7,
+              }}
+            />
+          ))}
+        </View>
+      )}
+      <Sprite {...player} state={state} size={size} />
+    </Animated.View>
+  );
+}
+function TapRipple({ count }: any) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.value = 0;
+    p.value = withTiming(1, { duration: 240 });
+    return () => cancelAnimation(p);
+  }, [count]);
+  const style = useAnimatedStyle(() => ({
+    opacity: (1 - p.value) * 0.22,
+    transform: [{ scale: 0.4 + p.value * 1.2 }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          width: 100,
+          height: 100,
+          borderRadius: 50,
+          backgroundColor: "#FFF",
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+function Checkpoint({ move, fraction, left, label }: any) {
+  const pulse = useSharedValue(0);
+  useAnimatedReaction(
+    () => move.value >= fraction,
+    (crossed, prev) => {
+      if (crossed && !prev)
+        pulse.value = withSequence(
+          withTiming(1, { duration: 100 }),
+          withTiming(0, { duration: 450 }),
+        );
+    },
+  );
+  const style = useAnimatedStyle(() => ({
+    opacity: move.value >= fraction ? 0.9 : 0.45,
+    backgroundColor: `rgba(233,240,86,${pulse.value * 0.5})`,
+    transform: [{ scaleX: 1 + pulse.value * 3 }],
+  }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: "absolute",
+          left,
+          top: 0,
+          bottom: 0,
+          width: 4,
+          borderLeftWidth: 1,
+          borderStyle: "dashed",
+          borderColor: C.paper,
+        },
+        style,
+      ]}
+    >
+      <Text style={{ fontSize: 8, color: C.paper, top: 3, width: 20 }}>
+        CP{label}
+      </Text>
+    </Animated.View>
   );
 }

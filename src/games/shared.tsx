@@ -1,3 +1,4 @@
+import Sprite from "../render/Sprite";
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated } from "react-native";
 import { C, s, Character } from "../ui";
@@ -81,7 +82,7 @@ export function Ready({ player, title, description, onReady }: any) {
   return (
     <View style={{ gap: 20, alignItems: "center", paddingVertical: 20 }}>
       <Badge>YOUR MOMENT OF QUESTIONABLE GLORY</Badge>
-      <Character {...player} animated size={115} />
+      <Sprite {...player} state="idle" size={115} />
       <Text style={[s.title, { fontSize: 30, textAlign: "center" }]}>
         {title || `${player.name}, you’re up.`}
       </Text>

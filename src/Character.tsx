@@ -1,7 +1,26 @@
-import React, { useEffect, useRef } from "react";
-import { Animated } from "react-native";
-import Svg, { Path, Ellipse, Circle, G } from "react-native-svg";
-const ink = "#351E28";
+import React, { useEffect, useId } from "react";
+import Svg, {
+  Path,
+  Ellipse,
+  G,
+  Defs,
+  LinearGradient,
+  Stop,
+} from "react-native-svg";
+import Animated, {
+  useSharedValue,
+  useAnimatedProps,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  withDelay,
+  cancelAnimation,
+  useReducedMotion,
+} from "react-native-reanimated";
+const AG = Animated.createAnimatedComponent(G),
+  AEllipse = Animated.createAnimatedComponent(Ellipse),
+  ink = "#351E28";
 const shapes: Record<string, string> = {
   bean: "M29 76 C12 62 16 35 32 23 C44 12 64 20 72 33 C90 44 86 68 73 80 C59 89 42 88 29 76Z",
   ghost: "M22 78 L23 43 C22 11 76 10 78 43 L82 80 L69 72 L59 83 L47 74 L35 82Z",
@@ -14,51 +33,75 @@ export default function Character({
   size = 70,
   mood = "happy",
   animated = false,
+  animationState = "idle",
+  animateCharacter = false,
 }: any) {
-  const wobble = useRef(new Animated.Value(0)).current;
+  const cycle = useSharedValue(0),
+    blink = useSharedValue(5),
+    reduced = useReducedMotion(),
+    uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   useEffect(() => {
-    if (!animated) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(wobble, {
-          toValue: 1,
-          duration: 550,
-          useNativeDriver: true,
+    cycle.value = 0;
+    if (!reduced && (animated || animateCharacter)) {
+      cycle.value = withRepeat(
+        withTiming(Math.PI * 2, {
+          duration:
+            animationState === "moving"
+              ? 360
+              : animationState === "winning"
+                ? 700
+                : 2200,
         }),
-        Animated.timing(wobble, {
-          toValue: 0,
-          duration: 550,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [animated]);
+        -1,
+        false,
+      );
+      blink.value = withRepeat(
+        withSequence(
+          withDelay(2500, withTiming(0.4, { duration: 75 })),
+          withTiming(5, { duration: 100 }),
+        ),
+        -1,
+        false,
+      );
+    }
+    return () => {
+      cancelAnimation(cycle);
+      cancelAnimation(blink);
+    };
+  }, [animationState, reduced, animated, animateCharacter]);
+  const leftArm = useAnimatedProps(() => ({
+      transform: `rotate(${animationState === "winning" ? 45 + Math.sin(cycle.value) * 10 : animationState === "interacting" ? 30 + Math.sin(cycle.value) * 28 : Math.sin(cycle.value) * (animationState === "moving" ? 32 : 5)} 32 66)`,
+    })),
+    rightArm = useAnimatedProps(() => ({
+      transform: `rotate(${animationState === "winning" ? -45 - Math.sin(cycle.value) * 10 : -Math.sin(cycle.value) * (animationState === "moving" ? 32 : 7)} 70 66)`,
+    })),
+    leftLeg = useAnimatedProps(() => ({
+      transform: `rotate(${Math.sin(cycle.value) * (animationState === "moving" ? 28 : 2)} 38 80)`,
+    })),
+    rightLeg = useAnimatedProps(() => ({
+      transform: `rotate(${-Math.sin(cycle.value) * (animationState === "moving" ? 28 : 2)} 65 80)`,
+    })),
+    eyes = useAnimatedProps(() => ({ ry: blink.value })),
+    idle = useAnimatedStyle(() => ({
+      transform: [
+        { translateY: animated ? Math.sin(cycle.value) * -size * 0.025 : 0 },
+        { rotate: animated ? `${Math.sin(cycle.value) * 3}deg` : "0deg" },
+      ],
+    }));
   return (
     <Animated.View
       accessibilityLabel={`${face} doodle character`}
-      style={{
-        width: size,
-        height: size,
-        transform: [
-          {
-            translateY: wobble.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, -size * 0.055],
-            }),
-          },
-          {
-            rotate: wobble.interpolate({
-              inputRange: [0, 1],
-              outputRange: ["-3deg", "3deg"],
-            }),
-          },
-        ],
-      }}
+      style={[{ width: size, height: size }, idle]}
     >
       <Svg width="100%" height="100%" viewBox="0 0 100 100">
-        <Ellipse cx="51" cy="94" rx="27" ry="3" fill={ink} opacity=".12" />
+        <Defs>
+          <LinearGradient id={`toon-${uid}`} x1=".2" y1="0" x2=".7" y2="1">
+            <Stop stopColor="#FFF5CE" />
+            <Stop offset=".25" stopColor={color} />
+            <Stop offset="1" stopColor={color} />
+          </LinearGradient>
+        </Defs>
+        <Ellipse cx="51" cy="95" rx="26" ry="3" fill={ink} opacity=".16" />
         <G
           fill="none"
           stroke={ink}
@@ -66,13 +109,30 @@ export default function Character({
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <Path d="M32 70 Q22 70 13 59 M70 68 Q84 73 91 60 M37 80 L34 91 L25 92 M65 80 L68 91 L77 92" />
-          <Path d={shapes[face] || shapes.bean} fill={color} />
+          <AG animatedProps={leftArm}>
+            <Path d="M32 66 Q20 74 12 59 M11 60 L9 56 M12 59 L14 54" />
+          </AG>
+          <AG animatedProps={rightArm}>
+            <Path d="M70 66 Q84 73 91 60 M90 60 L95 57 M91 60 L90 55" />
+          </AG>
+          <AG animatedProps={leftLeg}>
+            <Path d="M38 79 L34 91 L24 92" strokeWidth="4" />
+          </AG>
+          <AG animatedProps={rightLeg}>
+            <Path d="M65 79 L68 91 L78 92" strokeWidth="4" />
+          </AG>
+          <Path d={shapes[face] || shapes.bean} fill={`url(#toon-${uid})`} />
           <Path
             d={shapes[face] || shapes.bean}
             transform="translate(1.2 -.5)"
             strokeWidth=".7"
-            opacity=".5"
+            opacity=".45"
+          />
+          <Path
+            d="M31 32 Q35 27 40 29"
+            stroke="#FFF9DF"
+            strokeWidth="4"
+            opacity=".7"
           />
           {face === "bean" && (
             <Path d="M35 21 Q38 8 45 15 M40 21 Q50 9 52 17" />
@@ -82,22 +142,26 @@ export default function Character({
           {face === "blob" && <Path d="M30 29 L40 37 L53 23" strokeWidth="4" />}
           <Path
             d={
-              mood === "determined"
-                ? "M34 40 L43 44 M57 44 L67 40"
-                : "M34 39 Q39 35 44 39 M56 39 Q61 35 66 39"
+              mood === "sad"
+                ? "M33 42 L44 38 M57 38 L68 42"
+                : mood === "determined"
+                  ? "M34 40 L43 44 M57 44 L67 40"
+                  : "M34 39 Q39 35 44 39 M56 39 Q61 35 66 39"
             }
           />
-          <Ellipse cx="40" cy="48" rx="3" ry="5" fill={ink} />
-          <Ellipse cx="61" cy="48" rx="3" ry="5" fill={ink} />
-          {face === "ghost" ? (
+          <AEllipse animatedProps={eyes} cx="40" cy="48" rx="3" fill={ink} />
+          <AEllipse animatedProps={eyes} cx="61" cy="48" rx="3" fill={ink} />
+          {mood === "sad" ? (
+            <Path d="M42 66 Q51 56 61 66" />
+          ) : face === "ghost" ? (
             <Ellipse cx="51" cy="63" rx="5" ry="7" fill={ink} />
+          ) : mood === "determined" ? (
+            <Path d="M43 63 L59 63" />
           ) : (
-            <Path
-              d={
-                mood === "determined" ? "M43 63 L59 63" : "M40 59 Q50 76 62 59Z"
-              }
-              fill={ink}
-            />
+            <>
+              <Path d="M40 59 Q50 76 62 59Z" fill={ink} />
+              <Path d="M44 61 L58 61" stroke="#FFF9E7" strokeWidth="2" />
+            </>
           )}
           <Path
             d="M27 56 L32 57 M69 56 L74 54"

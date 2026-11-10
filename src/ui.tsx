@@ -1,3 +1,10 @@
+import Reanimated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+} from "react-native-reanimated";
+import { useSfx } from "./render/sound";
 import Character from "./Character";
 import React from "react";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
@@ -19,6 +26,7 @@ export function buzz(success = false) {
   else if (typeof navigator !== "undefined" && "vibrate" in navigator)
     navigator.vibrate(success ? [30, 40, 60] : 12);
 }
+const MotionPressable = Reanimated.createAnimatedComponent(Pressable);
 export function Button({
   children,
   onPress,
@@ -26,27 +34,40 @@ export function Button({
   disabled = false,
   testID,
 }: any) {
+  const pressure = useSharedValue(0),
+    sound = useSfx();
+  const motion = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: pressure.value * 3 },
+      { scale: 1 - pressure.value * 0.025 },
+    ],
+  }));
   return (
-    <Pressable
+    <MotionPressable
+      accessibilityRole="button"
       testID={testID}
       disabled={disabled}
+      onPressIn={() => (pressure.value = withTiming(1, { duration: 65 }))}
+      onPressOut={() => (pressure.value = withSpring(0, { damping: 14 }))}
       onPress={() => {
         buzz();
+        sound("tap");
         onPress?.();
       }}
-      style={({ pressed }) => [
+      style={[
         s.button,
         secondary && s.secondary,
         disabled && { opacity: 0.4 },
-        pressed && { transform: [{ translateY: 3 }], shadowOpacity: 0 },
+        motion,
       ]}
     >
       <Text style={[s.buttonText, secondary && { color: C.ink }]}>
         {children}
       </Text>
-    </Pressable>
+    </MotionPressable>
   );
 }
+
 export function Chip({ children, active, onPress }: any) {
   return (
     <Pressable
