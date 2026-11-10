@@ -38,3 +38,7 @@ Fixed the native Worklets `invalidTransform` failure by routing SVG affine trans
 - **17 Playwright tests** pass at desktop and 390×844 phone sizes. New coverage exercises the once-per-launch intro, a complete two-player Yapathon manual-callout round without microphone access, dynamic Wheel names/cards/immediate reveals, one-safe plus one-doom results, simultaneous race contacts and redesigned Snack Flight motion.
 - The timer uses an absolute wall-clock deadline and recalculates on AppState activation. Physical-device background suspension, native haptics, native multi-touch and frame pacing still require device testing.
 - The price bank uses dated source links. Retail prices and third-party pages can change and need editorial review before a store release.
+
+## v0.4.1 native colour correction — 11 November 2026
+
+The race checkpoint previously constructed an animated RGBA string. Near zero, JavaScript serialized its alpha in scientific notation, such as `rgba(233,240,86,1.55e-8)`, which native Reanimated rejects. The checkpoint now uses the fixed `#E9F056` colour and a separately clamped numeric opacity. A regression test exercises the reported near-zero value and asserts that no RGBA string is produced. All **23 Node tests**, the focused race/launch browser checks, strict TypeScript checking, and web/iOS/Android Expo exports pass. The launch animation was also expanded while remaining a 2.4-second, reduced-motion-aware cold-launch overlay.

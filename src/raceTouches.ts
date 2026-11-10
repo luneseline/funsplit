@@ -21,3 +21,11 @@ export function releaseRaceTouches(
 ) {
   for (const touch of touches) active.delete(Number(touch.identifier));
 }
+
+export function checkpointPulseStyle(value: number) {
+  "worklet";
+  return {
+    backgroundColor: "#E9F056",
+    opacity: Math.max(0, Math.min(0.5, value * 0.5)),
+  };
+}

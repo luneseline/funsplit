@@ -31,6 +31,8 @@ The host starts and configures games. Each player controls their own turn from t
 
 **v0.3.1 fixes the native Worklets `invalidTransform` error.** Pull the update and restart Metro with `npx expo start --go --clear`.
 
+**v0.4.1 fixes the native Reanimated `Invalid color value` error in Tap Tap Broke.** Checkpoint flashes now animate a clamped numeric opacity over a fixed colour. The opening sequence is also rebuilt with a three-character entrance, orbiting party pieces, decision cards and a faster 2.4-second reveal.
+
 ## Graphics upgrade (v0.3)
 
 Every game now uses the shared motion/effects layer. Continuous flight, billiards, crane aim and crosshair movement use Reanimated shared values and frame callbacks instead of forcing React redraws. Gameplay constants, scores and multiplayer rules are preserved. Effects include articulated character states, layered scenery, shaded materials, bounded particles, animated counters, checkpoint pulses, bow/cue recoil, transitions and six original event-driven sound cues. Use **SFX ON/OFF** separately from the music toggle.

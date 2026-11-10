@@ -10,6 +10,7 @@ import {
 } from "../src/model.ts";
 import { pickTopic, secondsRemaining, yapTopics } from "../src/yapathon.ts";
 import {
+  checkpointPulseStyle,
   consumeRaceTouchStarts,
   releaseRaceTouches,
 } from "../src/raceTouches.ts";
@@ -100,4 +101,12 @@ test("one native touch batch registers both race lanes once", () => {
     consumeRaceTouchStarts([{ identifier: 11, locationX: 32 }], 300, active),
     [0],
   );
+});
+
+test("race checkpoint pulse uses a fixed native color and numeric alpha", () => {
+  const almostZero = checkpointPulseStyle(3.1033711045402868e-8);
+  assert.equal(almostZero.backgroundColor, "#E9F056");
+  assert.equal(typeof almostZero.opacity, "number");
+  assert.ok(almostZero.opacity >= 0 && almostZero.opacity <= 0.5);
+  assert.equal(JSON.stringify(almostZero).includes("rgba"), false);
 });

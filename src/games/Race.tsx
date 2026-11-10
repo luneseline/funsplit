@@ -18,7 +18,11 @@ import { type Player } from "../model";
 import { createBracket, advanceBracket, bracketScores } from "../bracket";
 import { Button, C, s, Character, buzz } from "../ui";
 import { Badge, Burst } from "./shared";
-import { consumeRaceTouchStarts, releaseRaceTouches } from "../raceTouches";
+import {
+  checkpointPulseStyle,
+  consumeRaceTouchStarts,
+  releaseRaceTouches,
+} from "../raceTouches";
 const FINISH = 60;
 export default function Race({
   players,
@@ -491,11 +495,13 @@ function Checkpoint({ move, fraction, left, label }: any) {
         );
     },
   );
-  const style = useAnimatedStyle(() => ({
-    opacity: move.value >= fraction ? 0.9 : 0.45,
-    backgroundColor: `rgba(233,240,86,${pulse.value * 0.5})`,
-    transform: [{ scaleX: 1 + pulse.value * 3 }],
-  }));
+  const lineStyle = useAnimatedStyle(() => ({
+      opacity: move.value >= fraction ? 0.9 : 0.45,
+    })),
+    pulseStyle = useAnimatedStyle(() => ({
+      ...checkpointPulseStyle(pulse.value),
+      transform: [{ scaleX: 1 + pulse.value * 3 }],
+    }));
   return (
     <Animated.View
       pointerEvents="none"
@@ -510,9 +516,12 @@ function Checkpoint({ move, fraction, left, label }: any) {
           borderStyle: "dashed",
           borderColor: C.paper,
         },
-        style,
+        lineStyle,
       ]}
     >
+      <Animated.View
+        style={[{ position: "absolute", inset: 0, width: 4 }, pulseStyle]}
+      />
       <Text style={{ fontSize: 8, color: C.paper, top: 3, width: 20 }}>
         CP{label}
       </Text>
