@@ -1,73 +1,61 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, TextInput, Animated } from "react-native";
-import { type GameId, prices, type Player } from "./model";
+import { View, Text, Pressable, Animated } from "react-native";
+import Svg, { Path, Circle, Line, Text as SvgText } from "react-native-svg";
+import { type GameId, type Player } from "./model";
 import { Button, Character, C, s, buzz } from "./ui";
-const W = 300,
-  H = 330;
-export default function Game({
-  id,
-  player,
-  onDone,
-  round,
-}: {
+import Archery from "./games/Archery";
+import Tower from "./games/Tower";
+import Price from "./games/Price";
+import { Badge, Burst, Ready } from "./games/shared";
+type Props = {
   id: GameId;
   player: Player;
   onDone: (n: number) => void;
   round: number;
-}) {
-  const [started, start] = useState(false),
+};
+export default function Game(props: Props) {
+  if (props.id === "archery") return <Archery {...props} />;
+  if (props.id === "tower") return <Tower {...props} />;
+  if (props.id === "price") return <Price {...props} />;
+  return <Arcade {...props} />;
+}
+function Arcade({ id, player, onDone }: Props) {
+  const [started, setStarted] = useState(false),
     [done, setDone] = useState(false),
     [score, setScore] = useState(0),
-    [time, setTime] = useState(10),
-    [tick, setTick] = useState(0),
-    [guess, setGuess] = useState(""),
-    [shots, setShots] = useState(0),
+    [frame, setFrame] = useState(0),
+    [angle, setAngle] = useState(-42),
     [power, setPower] = useState(50),
-    [aim, setAim] = useState(0),
-    [message, setMessage] = useState("");
-  const t = useRef(0),
+    [message, setMessage] = useState(""),
+    [shooting, setShooting] = useState(false);
+  const bird = useRef({ y: 140, v: 0, x: 310, gap: 150, points: 0 }),
+    cue = useRef({ x: 55, y: 240, vx: 0, vy: 0 }),
+    ball = useRef({ x: 220, y: 90, vx: 0, vy: 0, hit: false, pocketed: false }),
+    active = useRef(false),
     ended = useRef(false),
-    taps = useRef(0),
-    blocks = useRef([{ x: 70, w: 160 }]),
-    bird = useRef({ y: 150, v: 0, x: 310, gap: 150, points: 0 }),
-    shot = useRef({ x: 55, y: 240, vx: 0, vy: 0, active: false }),
-    objectBall = useRef({
-      x: 220,
-      y: 90,
-      vx: 0,
-      vy: 0,
-      hit: false,
-      pocketed: false,
-    }),
-    arrow = useRef({ x: 150, y: 150 }),
-    anim = useRef(new Animated.Value(0)).current;
-  const price = prices[round % prices.length];
-  function finish(n: number) {
+    rotation = useRef(new Animated.Value(0)).current;
+  function finish(n: number, note = "") {
     if (ended.current) return;
     ended.current = true;
+    active.current = false;
     setScore(n);
+    setMessage(note);
     setDone(true);
     buzz(true);
   }
   useEffect(() => {
-    if (!started || done) return;
+    if (!started || done || id === "wheel") return;
     let last = Date.now();
     const timer = setInterval(() => {
       const now = Date.now(),
-        dt = Math.min((now - last) / 1000, 0.05);
+        dt = Math.min((now - last) / 1000, 0.04);
       last = now;
-      t.current += dt;
-      setTick((v) => v + 1);
-      if (id === "race") {
-        setTime(Math.max(0, 10 - t.current));
-        if (t.current >= 10) finish(taps.current);
-      }
-      if (id === "tower" && t.current > 20) finish(blocks.current.length - 1);
+      setFrame((n) => n + 1);
       if (id === "flappy") {
         const b = bird.current;
-        b.v += 700 * dt;
+        b.v += 660 * dt;
         b.y += b.v * dt;
-        b.x -= 105 * dt;
+        b.x -= 100 * dt;
         if (b.x < -45) {
           b.x = 315;
           b.gap = 100 + Math.random() * 125;
@@ -77,70 +65,70 @@ export default function Game({
         }
         if (
           b.y < 0 ||
-          b.y > H - 28 ||
-          (b.x < 91 &&
-            b.x + 42 > 65 &&
-            (b.y < b.gap - 65 || b.y + 28 > b.gap + 65))
+          b.y > 302 ||
+          (b.x < 90 &&
+            b.x + 42 > 60 &&
+            (b.y < b.gap - 68 || b.y + 28 > b.gap + 68))
         )
-          finish(b.points);
+          finish(
+            b.points,
+            "Snack attack. Your flight has been deliciously cancelled.",
+          );
       }
-      if (id === "pool" && shot.current.active) {
-        const b = shot.current,
-          o = objectBall.current;
-        for (const ball of [b, o]) {
-          if (ball === o && o.pocketed) continue;
-          ball.x += ball.vx * dt;
-          ball.y += ball.vy * dt;
-          ball.vx *= Math.pow(0.35, dt);
-          ball.vy *= Math.pow(0.35, dt);
-          const pocket = [
-            [20, 20],
-            [280, 20],
-            [20, 310],
-            [280, 310],
-          ].some(([x, y]) => Math.hypot(ball.x - x, ball.y - y) < 17);
-          if (pocket) {
-            if (ball === o) {
+      if (id === "pool" && active.current) {
+        const c = cue.current,
+          o = ball.current;
+        for (const b of [c, o]) {
+          if (b === o && o.pocketed) continue;
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          b.vx *= Math.pow(0.35, dt);
+          b.vy *= Math.pow(0.35, dt);
+          if (
+            [
+              [20, 20],
+              [280, 20],
+              [20, 310],
+              [280, 310],
+            ].some(([x, y]) => Math.hypot(b.x - x, b.y - y) < 17)
+          ) {
+            if (b === o) {
               o.pocketed = true;
-              finish(100);
-            } else {
-              finish(0);
-              setMessage("Scratch! The cue ball found a pocket.");
-            }
-            b.active = false;
+              finish(100, "Pocketed! A very expensive little victory.");
+            } else
+              finish(0, "Scratch. The white ball was feeling adventurous.");
             break;
           }
-          if (ball.x < 22 || ball.x > 278) {
-            ball.vx *= -0.85;
-            ball.x = Math.max(22, Math.min(278, ball.x));
+          if (b.x < 22 || b.x > 278) {
+            b.vx *= -0.85;
+            b.x = Math.max(22, Math.min(278, b.x));
           }
-          if (ball.y < 22 || ball.y > 308) {
-            ball.vy *= -0.85;
-            ball.y = Math.max(22, Math.min(308, ball.y));
+          if (b.y < 22 || b.y > 308) {
+            b.vy *= -0.85;
+            b.y = Math.max(22, Math.min(308, b.y));
           }
         }
-        const dx = o.x - b.x,
-          dy = o.y - b.y,
+        const dx = o.x - c.x,
+          dy = o.y - c.y,
           d = Math.hypot(dx, dy);
-        if (d < 23 && !o.hit) {
+        if (d > 0 && d < 23 && !o.hit) {
           const nx = dx / d,
             ny = dy / d,
-            impact = b.vx * nx + b.vy * ny;
+            impact = c.vx * nx + c.vy * ny;
           if (impact > 0) {
             o.vx = nx * impact;
             o.vy = ny * impact;
-            b.vx -= o.vx;
-            b.vy -= o.vy;
+            c.vx -= o.vx;
+            c.vy -= o.vy;
             o.hit = true;
             buzz();
           }
         }
         if (
-          Math.hypot(b.vx, b.vy) + Math.hypot(o.vx, o.vy) < 12 &&
+          Math.hypot(c.vx, c.vy) + Math.hypot(o.vx, o.vy) < 12 &&
           !ended.current
         ) {
-          b.active = false;
-          const nearest = Math.min(
+          const distance = Math.min(
             ...[
               [20, 20],
               [280, 20],
@@ -148,548 +136,388 @@ export default function Game({
               [280, 310],
             ].map(([x, y]) => Math.hypot(o.x - x, o.y - y)),
           );
-          finish(o.hit ? Math.max(1, Math.round(70 - nearest / 3)) : 0);
-          setMessage(
+          finish(
+            o.hit ? Math.max(1, Math.round(70 - distance / 3)) : 0,
             o.hit
-              ? "Closer to a pocket = more points."
-              : "Missed the orange ball.",
+              ? "Nearly. Closer to a pocket earns more points."
+              : "Missed. At least the table looks nice.",
           );
         }
       }
     }, 25);
     return () => clearInterval(timer);
   }, [started, done, id]);
-  function action() {
-    if (done) return;
-    buzz();
-    if (!started) {
-      start(true);
-      return;
-    }
-    if (id === "race") {
-      taps.current++;
-      setScore(taps.current);
-    }
-    if (id === "tower") {
-      const prev = blocks.current.at(-1)!,
-        x = ((Math.sin(t.current * 2.8) + 1) * (W - prev.w)) / 2,
-        left = Math.max(prev.x, x),
-        right = Math.min(prev.x + prev.w, x + prev.w);
-      if (right - left < 8) {
-        finish(blocks.current.length - 1);
-        return;
-      }
-      blocks.current.push({ x: left, w: right - left });
-      setScore(blocks.current.length - 1);
-      if (blocks.current.length >= 13) finish(12);
-    }
-    if (id === "flappy") bird.current.v = -255;
-    if (id === "archery") {
-      const x = 150 + Math.sin(t.current * 2.9) * 110,
-        y = 155 + Math.cos(t.current * 3.7) * 105;
-      arrow.current = { x, y };
-      const val = Math.max(0, Math.round(100 - Math.hypot(x - 150, y - 155)));
-      setScore((v) => v + val);
-      setShots((v) => v + 1);
-      setMessage(`${val} points!`);
-      if (shots === 2) finish(score + val);
-    }
-  }
+  useEffect(() => () => rotation.stopAnimation(), []);
   function spin() {
-    if (started) return;
-    start(true);
-    const n = Math.floor(Math.random() * 100) + 1;
-    Animated.timing(anim, {
-      toValue: 1440 + n * 3.6,
-      duration: 2800,
+    setStarted(true);
+    const sector = Math.floor(Math.random() * 10);
+    Animated.timing(rotation, {
+      toValue: 2160 - (sector * 36 + 18),
+      duration: 3400,
       useNativeDriver: true,
-    }).start(() => finish(n));
+    }).start(({ finished }) => {
+      if (finished)
+        finish(
+          (sector + 1) * 10,
+          "The wheel has spoken. Please direct complaints to the universe.",
+        );
+    });
   }
-  const movingX =
-    ((Math.sin(t.current * 2.8) + 1) * (W - blocks.current.at(-1)!.w)) / 2;
   if (!started)
     return (
-      <View style={{ gap: 22, alignItems: "center", paddingVertical: 35 }}>
-        <Character {...player} size={110} />
-        <Text style={s.title}>{player.name}, you’re up.</Text>
-        <Text style={[s.body, { textAlign: "center" }]}>
-          {instructions[id]}
-        </Text>
-        <Button onPress={id === "wheel" ? spin : () => start(true)}>
-          {id === "wheel" ? "Spin my fate ↻" : "I’m ready. Let’s play →"}
-        </Button>
-      </View>
+      <Ready
+        player={player}
+        description={
+          id === "flappy"
+            ? "Tap to flap through a ridiculous food court. Dodge the snacks and count every gate."
+            : id === "pool"
+              ? "One shot. Aim the cue ball, set your power, and pocket orange for 100 points. Near misses score by distance; scratches score zero."
+              : "One spin. Ten luck sectors. A bigger number gives your wallet a better chance."
+        }
+        onReady={
+          <Button onPress={id === "wheel" ? spin : () => setStarted(true)}>
+            {id === "wheel" ? "Spin my fate ↻" : "I’m ready. Let’s play →"}
+          </Button>
+        }
+      />
     );
   return (
-    <View style={{ gap: 18, alignItems: "center" }}>
-      <View style={[s.row, { justifyContent: "space-between", width: "100%" }]}>
-        <Text style={s.eyebrow}>
-          {player.name.toUpperCase()} /{" "}
-          {id === "race"
-            ? `${time.toFixed(1)}s`
-            : id === "archery"
-              ? `${shots}/3 ARROWS`
-              : "YOUR TURN"}
-        </Text>
-        <Text style={{ fontSize: 26, fontWeight: "900", color: C.ink }}>
-          {score}
+    <View style={{ gap: 16, alignItems: "center" }}>
+      <View style={[s.row, { width: "100%", justifyContent: "space-between" }]}>
+        <Badge>
+          {id === "pool"
+            ? "THE ONE-SHOT CLUB"
+            : id === "wheel"
+              ? "THE WHEEL OF FINANCIAL FATE"
+              : "SNACK AIRLINES · FLIGHT 404"}
+        </Badge>
+        <Text style={{ fontSize: 25, fontWeight: "900", color: C.ink }}>
+          {score} {id === "flappy" ? "GATES" : "PTS"}
         </Text>
       </View>
-      {id === "price" ? (
-        <View style={{ gap: 20, alignItems: "center", padding: 25 }}>
-          <Text style={{ fontSize: 85 }}>{price.emoji}</Text>
-          <Text style={{ fontSize: 24, fontWeight: "800", color: C.ink }}>
-            {price.name}
-          </Text>
-          <Text style={s.muted}>
-            Illustrative price in USD • closest guess wins
-          </Text>
-          <TextInput
-            accessibilityLabel="Price guess"
-            keyboardType="numeric"
-            value={guess}
-            onChangeText={setGuess}
-            placeholder="$ Your best guess"
-            style={[s.input, { width: 260 }]}
-            editable={!done}
-          />
-          {!done && (
-            <Button
-              disabled={
-                !guess.trim() ||
-                !Number.isFinite(Number(guess)) ||
-                Number(guess) < 0
-              }
-              onPress={() => {
-                setMessage(
-                  "Guess locked. The price is revealed after everyone plays.",
-                );
-                finish(
-                  Math.max(0, 100000 - Math.abs(Number(guess) - price.price)),
-                );
-              }}
-            >
-              Lock in guess
-            </Button>
-          )}
-        </View>
-      ) : (
-        <Pressable
-          accessibilityLabel="Game arena"
-          onPress={action}
-          disabled={done || id === "pool" || id === "wheel"}
-          style={{
-            width: W,
-            height: H,
-            backgroundColor: id === "pool" ? C.sage : C.blue,
-            borderWidth: 2,
-            borderColor: C.ink,
-            borderRadius: 22,
-            overflow: "hidden",
-          }}
-        >
-          {id === "tower" && (
-            <>
-              {blocks.current.map((b, i) => (
-                <View
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    bottom: i * 22,
-                    left: b.x,
-                    width: b.w,
-                    height: 22,
-                    backgroundColor: i % 2 ? C.orange : C.yellow,
-                    borderWidth: 1.5,
-                    borderColor: C.ink,
-                    borderRadius: 4,
-                  }}
-                />
-              ))}
-              {!done && (
-                <View
-                  style={{
-                    position: "absolute",
-                    bottom: blocks.current.length * 22,
-                    left: movingX,
-                    width: blocks.current.at(-1)!.w,
-                    height: 22,
-                    backgroundColor: C.ink,
-                    borderRadius: 4,
-                  }}
-                />
-              )}
-              <Text
-                style={{
-                  position: "absolute",
-                  top: 18,
-                  left: 18,
-                  color: C.ink,
-                  fontWeight: "800",
-                }}
-              >
-                TAP TO DROP ↓
-              </Text>
-            </>
-          )}
-          {id === "race" && (
+      <Pressable
+        accessibilityLabel="Game arena"
+        onPress={() => {
+          if (id === "flappy") {
+            bird.current.v = -250;
+            buzz();
+          }
+        }}
+        disabled={id !== "flappy" || done}
+        style={{
+          width: 300,
+          height: 330,
+          borderWidth: 2,
+          borderColor: C.ink,
+          borderRadius: 24,
+          backgroundColor: id === "pool" ? "#799B83" : C.blue,
+          overflow: "hidden",
+        }}
+      >
+        {id === "flappy" && (
+          <>
+            <Svg width="300" height="330" style={{ position: "absolute" }}>
+              <Path
+                d="M0 270 Q75 200 150 270 T300 270 L300 330 L0 330Z"
+                fill={C.sage}
+                opacity=".6"
+              />
+              <Path
+                d={`M${(frame * -0.5) % 360} 50 Q30 20 60 50 Q90 20 110 50 M150 80 Q180 50 210 80`}
+                stroke={C.paper}
+                strokeWidth="14"
+                fill="none"
+                strokeLinecap="round"
+              />
+            </Svg>
             <View
               style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 28,
+                position: "absolute",
+                left: 57,
+                top: bird.current.y,
+                transform: [
+                  {
+                    rotate: `${Math.max(-25, Math.min(35, bird.current.v / 12))}deg`,
+                  },
+                ],
               }}
             >
-              <View
-                style={{
-                  transform: [{ translateX: Math.min(90, score * 2) - 45 }],
-                }}
-              >
-                <Character {...player} size={110} />
-              </View>
-              <Text style={{ fontSize: 35, fontWeight: "900", color: C.ink }}>
-                TAP! TAP! TAP!
-              </Text>
-              <View
-                style={{
-                  height: 10,
-                  width: 240,
-                  backgroundColor: C.paper,
-                  borderRadius: 6,
-                }}
-              >
-                <View
-                  style={{
-                    height: 10,
-                    width: `${time * 10}%`,
-                    backgroundColor: C.orange,
-                    borderRadius: 6,
-                  }}
-                />
-              </View>
+              <Character {...player} size={32} mood="determined" />
             </View>
-          )}
-          {id === "flappy" && (
-            <>
-              <View
-                style={{ position: "absolute", left: 60, top: bird.current.y }}
-              >
-                <Character {...player} size={28} />
-              </View>
-              <View
-                style={{
-                  position: "absolute",
-                  left: bird.current.x,
-                  top: 0,
-                  width: 42,
-                  height: Math.max(0, bird.current.gap - 65),
-                  backgroundColor: C.orange,
-                  borderBottomLeftRadius: 15,
-                  borderBottomRightRadius: 15,
-                  justifyContent: "flex-end",
-                }}
-              >
-                <Text style={{ fontSize: 31 }}>🍕</Text>
-              </View>
-              <View
-                style={{
-                  position: "absolute",
-                  left: bird.current.x,
-                  top: bird.current.gap + 65,
-                  bottom: 0,
-                  width: 42,
-                  backgroundColor: C.yellow,
-                  borderTopLeftRadius: 15,
-                  borderTopRightRadius: 15,
-                }}
-              >
-                <Text style={{ fontSize: 31 }}>🍔</Text>
-              </View>
-              <Text
-                style={{
-                  position: "absolute",
-                  bottom: 14,
-                  left: 20,
-                  fontWeight: "800",
-                  color: C.ink,
-                }}
-              >
-                TAP TO FLAP
-              </Text>
-            </>
-          )}
-          {id === "archery" && (
-            <>
-              {[210, 160, 110, 60, 15].map((d, i) => (
-                <View
-                  key={d}
-                  style={{
-                    position: "absolute",
-                    left: 150 - d / 2,
-                    top: 155 - d / 2,
-                    width: d,
-                    height: d,
-                    borderRadius: d / 2,
-                    backgroundColor: [
-                      C.paper,
-                      C.ink,
-                      C.blue,
-                      C.orange,
-                      C.yellow,
-                    ][i],
-                  }}
-                />
-              ))}
-              <Text
-                style={{
-                  position: "absolute",
-                  left: 150 + Math.sin(t.current * 2.9) * 110 - 12,
-                  top: 155 + Math.cos(t.current * 3.7) * 105 - 20,
-                  fontSize: 32,
-                  color: C.ink,
-                }}
-              >
-                ＋
-              </Text>
-              {shots > 0 && (
-                <Text
-                  style={{
-                    position: "absolute",
-                    left: arrow.current.x - 8,
-                    top: arrow.current.y - 12,
-                    fontSize: 24,
-                  }}
-                >
-                  ✕
-                </Text>
-              )}
-            </>
-          )}
-          {id === "pool" && (
-            <>
-              <View
-                style={{
-                  position: "absolute",
-                  inset: 8,
-                  borderWidth: 10,
-                  borderColor: C.ink,
-                  borderRadius: 18,
-                }}
-              />
-              {[
-                [20, 20],
-                [280, 20],
-                [20, 310],
-                [280, 310],
-              ].map(([x, y], i) => (
-                <View
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    left: x - 12,
-                    top: y - 12,
-                    width: 24,
-                    height: 24,
-                    borderRadius: 12,
-                    backgroundColor: C.ink,
-                  }}
-                />
-              ))}
-              {!objectBall.current.pocketed && (
-                <View
-                  style={{
-                    position: "absolute",
-                    left: objectBall.current.x - 12,
-                    top: objectBall.current.y - 12,
-                    width: 24,
-                    height: 24,
-                    backgroundColor: C.orange,
-                    borderRadius: 12,
-                    borderWidth: 2,
-                    borderColor: C.ink,
-                  }}
-                />
-              )}
-              {!shot.current.active && !done && (
-                <View
-                  style={{
-                    position: "absolute",
-                    left: 55,
-                    top: 240,
-                    width: 210,
-                    height: 2,
-                    backgroundColor: C.paper,
-                    transformOrigin: "left",
-                    transform: [{ rotate: `${aim - 45}deg` }],
-                  }}
-                />
-              )}
-              <View
-                style={{
-                  position: "absolute",
-                  left: shot.current.x - 10,
-                  top: shot.current.y - 10,
-                  width: 20,
-                  height: 20,
-                  backgroundColor: C.paper,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: C.ink,
-                }}
-              />
-            </>
-          )}
-          {id === "wheel" && (
             <View
               style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
+                position: "absolute",
+                left: bird.current.x,
+                top: 0,
+                width: 42,
+                height: bird.current.gap - 68,
+                backgroundColor: C.orange,
+                borderWidth: 2,
+                borderColor: C.ink,
+                borderBottomLeftRadius: 18,
+                borderBottomRightRadius: 18,
+                justifyContent: "flex-end",
               }}
             >
-              <Text style={{ fontSize: 30, color: C.ink }}>▼</Text>
-              <Animated.View
-                style={{
-                  width: 230,
-                  height: 230,
-                  borderRadius: 115,
-                  backgroundColor: C.yellow,
-                  borderWidth: 8,
-                  borderColor: C.ink,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  transform: [
-                    {
-                      rotate: anim.interpolate({
-                        inputRange: [0, 1800],
-                        outputRange: ["0deg", "1800deg"],
-                      }),
-                    },
-                  ],
-                }}
-              >
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                  <View
-                    key={i}
-                    style={{
-                      position: "absolute",
-                      width: 210,
-                      height: 3,
-                      backgroundColor: C.ink,
-                      transform: [{ rotate: `${i * 45}deg` }],
-                    }}
-                  />
-                ))}
-                <View
-                  style={{
-                    width: 70,
-                    height: 70,
-                    backgroundColor: C.orange,
-                    borderWidth: 3,
-                    borderColor: C.ink,
-                    borderRadius: 35,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 30 }}>✳</Text>
-                </View>
-              </Animated.View>
+              <Text style={{ fontSize: 30 }}>🍕</Text>
             </View>
-          )}
-        </Pressable>
-      )}
+            <View
+              style={{
+                position: "absolute",
+                left: bird.current.x,
+                top: bird.current.gap + 68,
+                bottom: 0,
+                width: 42,
+                backgroundColor: C.yellow,
+                borderWidth: 2,
+                borderColor: C.ink,
+                borderTopLeftRadius: 18,
+                borderTopRightRadius: 18,
+              }}
+            >
+              <Text style={{ fontSize: 30 }}>🍔</Text>
+            </View>
+            <Text
+              style={[
+                s.eyebrow,
+                { position: "absolute", left: 14, bottom: 13 },
+              ]}
+            >
+              TAP TO FLAP · AVOID THE MENU
+            </Text>
+          </>
+        )}
+        {id === "pool" && (
+          <Svg width="300" height="330">
+            <Path
+              d="M18 18 L282 18 L282 312 L18 312Z"
+              fill="none"
+              stroke={C.ink}
+              strokeWidth="14"
+              strokeLinejoin="round"
+            />
+            {[
+              [20, 20],
+              [280, 20],
+              [20, 310],
+              [280, 310],
+            ].map(([x, y], i) => (
+              <Circle key={i} cx={x} cy={y} r="13" fill={C.ink} />
+            ))}
+            {[65, 110, 155, 200, 245].map((y) => (
+              <Circle key={y} cx="18" cy={y} r="2" fill={C.paper} />
+            ))}
+            {!shooting && !done && (
+              <>
+                <Line
+                  x1="55"
+                  y1="240"
+                  x2={55 + 210 * Math.cos((angle * Math.PI) / 180)}
+                  y2={240 + 210 * Math.sin((angle * Math.PI) / 180)}
+                  stroke={C.paper}
+                  strokeWidth="1.5"
+                  strokeDasharray="4 5"
+                />
+                <Line
+                  x1={55 - 15 * Math.cos((angle * Math.PI) / 180)}
+                  y1={240 - 15 * Math.sin((angle * Math.PI) / 180)}
+                  x2={55 - 75 * Math.cos((angle * Math.PI) / 180)}
+                  y2={240 - 75 * Math.sin((angle * Math.PI) / 180)}
+                  stroke={C.yellow}
+                  strokeWidth="5"
+                />
+              </>
+            )}
+            {!ball.current.pocketed && (
+              <>
+                <Circle
+                  cx={ball.current.x}
+                  cy={ball.current.y}
+                  r="12"
+                  fill={C.orange}
+                  stroke={C.ink}
+                  strokeWidth="2"
+                />
+                <Circle
+                  cx={ball.current.x - 3}
+                  cy={ball.current.y - 4}
+                  r="3"
+                  fill={C.paper}
+                  opacity=".65"
+                />
+              </>
+            )}
+            <Circle
+              cx={cue.current.x}
+              cy={cue.current.y}
+              r="10"
+              fill={C.paper}
+              stroke={C.ink}
+            />
+            <SvgText
+              x="150"
+              y="163"
+              textAnchor="middle"
+              fill={C.paper}
+              opacity=".2"
+              fontSize="17"
+              fontWeight="900"
+            >
+              POCKET MONEY
+            </SvgText>
+          </Svg>
+        )}
+        {id === "wheel" && (
+          <View
+            style={{ alignItems: "center", justifyContent: "center", flex: 1 }}
+          >
+            <Text
+              style={{
+                fontSize: 30,
+                color: C.ink,
+                zIndex: 2,
+                marginBottom: -10,
+              }}
+            >
+              ▼
+            </Text>
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: rotation.interpolate({
+                      inputRange: [0, 2160],
+                      outputRange: ["0deg", "2160deg"],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <Svg width="260" height="260" viewBox="-130 -130 260 260">
+                {Array.from({ length: 10 }, (_, i) => {
+                  const a = ((i * 36 - 90) * Math.PI) / 180,
+                    b = (((i + 1) * 36 - 90) * Math.PI) / 180,
+                    m = (a + b) / 2;
+                  return (
+                    <React.Fragment key={i}>
+                      <Path
+                        d={`M0 0 L${120 * Math.cos(a)} ${120 * Math.sin(a)} A120 120 0 0 1 ${120 * Math.cos(b)} ${120 * Math.sin(b)} Z`}
+                        fill={
+                          [C.yellow, C.orange, C.blue, C.sage, C.paper][i % 5]
+                        }
+                        stroke={C.ink}
+                        strokeWidth="2"
+                      />
+                      <SvgText
+                        x={92 * Math.cos(m)}
+                        y={92 * Math.sin(m) + 5}
+                        textAnchor="middle"
+                        fill={C.ink}
+                        fontWeight="900"
+                        fontSize="16"
+                      >
+                        {(i + 1) * 10}
+                      </SvgText>
+                    </React.Fragment>
+                  );
+                })}
+                <Circle r="26" fill={C.ink} />
+                <SvgText y="9" textAnchor="middle" fill={C.paper} fontSize="27">
+                  $
+                </SvgText>
+              </Svg>
+            </Animated.View>
+          </View>
+        )}
+        {done && score >= 60 && <Burst />}
+      </Pressable>
       {id === "pool" && !done && (
-        <View style={{ gap: 10, width: 300 }}>
-          <Text style={s.body}>
-            Angle {aim - 45}° · Power {power}%
-          </Text>
-          <View style={s.row}>
+        <View style={[s.card, { padding: 15, width: "100%", gap: 12 }]}>
+          <View style={[s.row, { justifyContent: "space-between" }]}>
+            <Text style={s.eyebrow}>AIM {angle}°</Text>
+            <Text style={s.eyebrow}>POWER {power}%</Text>
+          </View>
+          <View style={[s.row, { justifyContent: "space-between" }]}>
             <Button
+              disabled={shooting}
               secondary
-              onPress={() => setAim((v) => Math.max(-45, v - 5))}
+              onPress={() => setAngle((n) => Math.max(-90, n - 3))}
             >
-              ↶ Aim
+              ← Aim
             </Button>
             <Button
+              disabled={shooting}
               secondary
-              onPress={() => setAim((v) => Math.min(90, v + 5))}
+              onPress={() => setAngle((n) => Math.min(45, n + 3))}
             >
-              Aim ↷
+              Aim →
             </Button>
           </View>
           <View style={s.row}>
             <Button
+              disabled={shooting}
               secondary
-              onPress={() => setPower((v) => Math.max(10, v - 10))}
+              onPress={() => setPower((n) => Math.max(10, n - 10))}
             >
               −
             </Button>
+            <View
+              style={{
+                flex: 1,
+                height: 10,
+                backgroundColor: C.sage,
+                borderRadius: 5,
+              }}
+            >
+              <View
+                style={{
+                  width: `${power}%`,
+                  height: 10,
+                  backgroundColor: C.orange,
+                  borderRadius: 5,
+                }}
+              />
+            </View>
             <Button
+              disabled={shooting}
               secondary
-              onPress={() => setPower((v) => Math.min(100, v + 10))}
+              onPress={() => setPower((n) => Math.min(100, n + 10))}
             >
               +
             </Button>
-            <Button
-              disabled={shot.current.active}
-              onPress={() => {
-                buzz();
-                const a = ((aim - 45) * Math.PI) / 180;
-                shot.current = {
-                  x: 55,
-                  y: 240,
-                  vx: Math.cos(a) * power * 6,
-                  vy: Math.sin(a) * power * 6,
-                  active: true,
-                };
-                setMessage("");
-              }}
-            >
-              Shoot →
-            </Button>
           </View>
+          <Button
+            disabled={shooting}
+            onPress={() => {
+              const a = (angle * Math.PI) / 180;
+              cue.current.vx = Math.cos(a) * power * 6;
+              cue.current.vy = Math.sin(a) * power * 6;
+              active.current = true;
+              setShooting(true);
+              buzz();
+            }}
+          >
+            Shoot →
+          </Button>
         </View>
       )}
-      {message && <Text style={s.body}>{message}</Text>}
       {done ? (
         <View style={{ gap: 14, width: "100%" }}>
-          <Text style={[s.title, { textAlign: "center", fontSize: 28 }]}>
-            {id === "price"
-              ? "Guess locked."
-              : `${score} ${id === "wheel" ? "luck points" : "points"}. Nice effort.`}
+          <Text style={[s.title, { fontSize: 28, textAlign: "center" }]}>
+            {score} {id === "flappy" ? "gates" : "points"}. The damage is done.
           </Text>
+          <Text style={[s.body, { textAlign: "center" }]}>{message}</Text>
           <Button onPress={() => onDone(score)}>
             Save score & pass it on →
           </Button>
         </View>
-      ) : (
-        id !== "price" &&
-        id !== "wheel" &&
-        id !== "pool" && (
-          <Text style={s.muted}>
-            {id === "archery"
-              ? "Tap the target to shoot"
-              : id === "tower"
-                ? `${Math.max(0, 20 - t.current).toFixed(0)} seconds left · tap to drop`
-                : "Tap anywhere in the arena"}
-          </Text>
-        )
-      )}
+      ) : id === "flappy" ? (
+        <Text style={s.muted}>
+          Tap anywhere in the arena. The snacks are not your friends.
+        </Text>
+      ) : id === "wheel" ? (
+        <Text style={s.muted}>Shuffling your financial future…</Text>
+      ) : null}
     </View>
   );
 }
-const instructions: Record<GameId, string> = {
-  tower:
-    "Tap to drop each moving block. Only the overlap stays. You have 20 seconds or 12 levels.",
-  race: "Tap the arena as fast as you can for 10 seconds. Every tap counts.",
-  price:
-    "Guess the illustrative USD price. The smallest absolute error wins. No internet peeking.",
-  flappy:
-    "Tap to flap. Dodge the food columns. Every completed gate is a point.",
-  wheel: "One spin. 1–100 luck points. Your wallet would like a big number.",
-  pool: "Aim the white cue ball at the orange ball. Aim toward a corner pocket. Pocket orange for 100 points. Near misses score by distance. Scratches score zero.",
-  archery:
-    "The crosshair drifts. Tap to release an arrow near the centre. Three shots, up to 100 points each.",
-};

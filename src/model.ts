@@ -14,7 +14,7 @@ export const games = [
     tag: "FAST FINGERS",
     icon: "⚡",
     color: "#E9F056",
-    description: "Ten seconds. Tap like your wallet depends on it.",
+    description: "Two thumbs. One screen. A knockout race to the finish.",
     unit: "taps",
   },
   {
@@ -59,7 +59,7 @@ export const games = [
     tag: "TAKE YOUR SHOT",
     icon: "◎",
     color: "#FF5C34",
-    description: "Stop the drifting aim. Three arrows to glory.",
+    description: "Lock X. Lock Y. Let it fly. Three arrows, 30s each.",
     unit: "points",
   },
 ] as const;
@@ -161,8 +161,63 @@ export function winners(s: Session) {
   return ranked.filter((p) => p.points === ranked[0].points);
 }
 export const prices = [
-  { name: "Designer carry-on", emoji: "🧳", price: 3200 },
-  { name: "Swiss automatic watch", emoji: "⌚", price: 8500 },
-  { name: "Sculptural lounge chair", emoji: "🪑", price: 4200 },
-  { name: "Dinner for four", emoji: "🍽️", price: 280 },
+  {
+    brand: "GUCCI",
+    name: "GG Marmont small shoulder bag",
+    emoji: "◆",
+    price: 2220,
+    description:
+      "Quilted black shoulder bag; chain strap and detachable card holder.",
+    details: "Style 751526 AAFPP 1061 · 8.3 × 4.7 × 2 in · Italian production",
+    photo:
+      "https://media.gucci.com/style/DarkGray_Center_0_0_490x245/1793705405/751526_AAFPP_1061_015_100_0000_Light-gg-marmont-small-shoulder-bag.jpg",
+    source:
+      "https://www.gucci.com/us/en/pr/women/handbags/mini-bags-for-women/gg-marmont-small-shoulder-bag-p-751526AAFPP1061",
+  },
+  {
+    brand: "GUCCI",
+    name: "GG Marmont wide belt",
+    emoji: "◆",
+    price: 570,
+    description:
+      "A black leather belt with the archival double-letter brass buckle.",
+    details: "Style 400593 AP00T 1000 · 1.5 in wide · Italian production",
+    photo:
+      "https://media.gucci.com/style/DarkGray_Center_0_0_490x245/1781855108/400593_AP00T_1000_015_100_0000_Light-gg-marmont-wide-belt.jpg",
+    source:
+      "https://www.gucci.com/us/en/pr/women/accessories-for-women/belts-for-women/gg-marmont-wide-belt-p-400593AP00T1000",
+  },
+  {
+    brand: "GUCCI",
+    name: "Ace sneaker with Web",
+    emoji: "◆",
+    price: 760,
+    description:
+      "Low-top GG-pattern sneakers with striped sides, leather lining and rubber soles.",
+    details: "Style 760775 FACMZ 9746 · Beige/ebony · Italian production",
+    photo:
+      "https://media.gucci.com/style/DarkGray_Center_0_0_490x245/1782829826/760775_FACMZ_9746_015_100_0000_Light-mens-gucci-ace-sneaker-with-web.jpg",
+    source:
+      "https://www.gucci.com/us/en/pr/men/shoes-for-men/sneakers-for-men/mens-gucci-ace-sneaker-with-web-p-760775FACMZ9746",
+  },
 ];
+
+// A shared-screen race posts the entire bracket atomically, once per round.
+export function submitRaceRound(
+  s: Session,
+  values: Record<string, number>,
+): Session {
+  if (s.phase !== "playing" || roundGame(s) !== "race" || s.turn !== 0)
+    throw Error("No race bracket is awaiting scores.");
+  if (
+    Object.keys(values).length !== s.players.length ||
+    s.players.some(
+      (p) =>
+        !Number.isInteger(values[p.id]) ||
+        values[p.id] < 0 ||
+        values[p.id] > 10000,
+    )
+  )
+    throw Error("Invalid bracket scores.");
+  return s.players.reduce((next, p) => submit(next, p.id, values[p.id]), s);
+}

@@ -68,6 +68,35 @@ test("two clients share lobby, host starts, turns validate, disconnect resets", 
     await ack(b, "score", { sessionId: r.session.id, round: 0, value: 8 });
     r = await finished;
     assert.equal(r.session.scores.length, 2);
+    await ack(a, "reset", {});
+    const raceStarted = room(a, (r) => r.session?.config.game === "race");
+    await ack(a, "start", { ...defaultConfig, game: "race", rounds: 3 });
+    const racing = await raceStarted;
+    const event = {
+      sessionId: racing.session.id,
+      round: 0,
+      values: { [a.id!]: 10000, [b.id!]: 1020 },
+    };
+    assert.match((await ack(b, "raceScores", event)).error, /host/);
+    assert.match(
+      (
+        await ack(a, "score", {
+          sessionId: racing.session.id,
+          round: 0,
+          value: 10,
+        })
+      ).error,
+      /shared-screen/,
+    );
+    assert.match(
+      (await ack(a, "raceScores", { ...event, values: { [a.id!]: 10000 } }))
+        .error,
+      /Invalid/,
+    );
+    const advanced = room(a, (r) => r.session?.round === 1);
+    assert.equal((await ack(a, "raceScores", event)).ok, true);
+    assert.equal((await advanced).session.scores.length, 2);
+    assert.match((await ack(a, "raceScores", event)).error, /moved on/);
     const reset = room(a, (r) => r.players.length === 1 && !r.session);
     b.disconnect();
     await reset;

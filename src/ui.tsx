@@ -1,3 +1,4 @@
+import Character from "./Character";
 import React from "react";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -67,92 +68,7 @@ export function Chip({ children, active, onPress }: any) {
     </Pressable>
   );
 }
-export function Character({ face = "bean", color = C.yellow, size = 70 }: any) {
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <View
-        style={{
-          width: size * 0.78,
-          height: size * 0.85,
-          backgroundColor: color,
-          borderWidth: 2.5,
-          borderColor: C.ink,
-          borderRadius:
-            face === "star" ? 12 : face === "ghost" ? size * 0.45 : size * 0.35,
-          transform: [{ rotate: face === "blob" ? "-12deg" : "8deg" }],
-        }}
-      >
-        <View
-          style={{
-            flexDirection: "row",
-            gap: size * 0.12,
-            position: "absolute",
-            top: size * 0.25,
-            left: size * 0.19,
-          }}
-        >
-          <View
-            style={{
-              width: size * 0.065,
-              height: size * 0.12,
-              backgroundColor: C.ink,
-              borderRadius: 5,
-            }}
-          />
-          <View
-            style={{
-              width: size * 0.065,
-              height: size * 0.12,
-              backgroundColor: C.ink,
-              borderRadius: 5,
-            }}
-          />
-        </View>
-        <Text
-          style={{
-            position: "absolute",
-            top: size * 0.32,
-            left: size * 0.26,
-            fontSize: size * 0.24,
-            color: C.ink,
-            fontWeight: "900",
-          }}
-        >
-          {face === "ghost" ? "o" : "⌣"}
-        </Text>
-      </View>
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: size * 0.24,
-          width: size * 0.12,
-          height: size * 0.12,
-          backgroundColor: C.ink,
-          borderRadius: 5,
-        }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          bottom: 0,
-          right: size * 0.24,
-          width: size * 0.12,
-          height: size * 0.12,
-          backgroundColor: C.ink,
-          borderRadius: 5,
-        }}
-      />
-    </View>
-  );
-}
+export { default as Character } from "./Character";
 export const s = StyleSheet.create({
   button: {
     backgroundColor: C.ink,

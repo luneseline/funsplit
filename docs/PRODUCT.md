@@ -18,19 +18,19 @@ The emotional rhythm is anticipation → tiny skill challenge → public suspens
 
 ## Crew and identity
 
-Two to eight people, 24-character names, four simple character families, and palette-based player colours. The demo saves a local crew. Names and silhouettes make identity readable without colour alone. A production version should add colour selection, more expressive original characters, duplicate-name disambiguation, and a one-tap “usual crew” preset. Give players a persistent local UUID and reconnect token so renaming doesn’t split their payment history. The current connected demo uses socket identity and name matching for local history; this is not a global identity system.
+Two to eight people, 24-character names, four expressive original doodle character families, and palette-based player colours. The demo saves a local crew. Names and silhouettes make identity readable without colour alone. A production version should add colour selection, more character accessories, duplicate-name disambiguation, and a one-tap “usual crew” preset. Give players a persistent local UUID and reconnect token so renaming doesn’t split their payment history. The current connected demo uses socket identity and name matching for local history; this is not a global identity system.
 
 ## Candidate game evaluation
 
-| Game           | Hook                                  | Skill / fairness          | Demo treatment                     | Selection question                                            |
-| -------------- | ------------------------------------- | ------------------------- | ---------------------------------- | ------------------------------------------------------------- |
-| Stack attack   | Everyone can see the imminent mistake | Timing, overlap precision | Up to 12 blocks / 20 seconds       | Does watching remain fun after three rounds?                  |
-| Tap tap, broke | Immediate frantic competition         | Tap rate over 10 seconds  | Sequential turns for device parity | Is tapping tiring or fun at the table?                        |
-| Price of nice  | Surprise price reveal                 | Smallest absolute error   | Four illustrative USD prompts      | Do people enjoy luxury, bill, or absurd-item categories most? |
-| Snack flight   | Familiar one-button chaos             | Gates survived            | Food columns with generous gap     | Is failure funny without being frustrating?                   |
-| Wheel of owe   | No skill or explanation needed        | Random score              | One luck score per player          | Should this become direct payer selection?                    |
-| Pocket money   | Satisfying tactile shot               | Physics and aim           | One orange ball / one shot         | Is aiming too slow for the core loop?                         |
-| Bullseye bill  | Tension before release                | Three timed releases      | Moving crosshair / 300 max         | Does three-shot play feel quick enough?                       |
+| Game           | Hook                                  | Skill / fairness          | Demo treatment                            | Selection question                                            |
+| -------------- | ------------------------------------- | ------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| Stack attack   | Everyone can see the imminent mistake | Timing, overlap precision | Crane drops / 12 floors / 30 seconds      | Does watching remain fun after three rounds?                  |
+| Tap tap, broke | Immediate frantic competition         | Tap rate over 10 seconds  | Same-screen knockout heats                | Is tapping tiring or fun at the table?                        |
+| Price of nice  | Surprise price reveal                 | Smallest absolute error   | Real designer photos and dated USD retail | Do people enjoy luxury, bill, or absurd-item categories most? |
+| Snack flight   | Familiar one-button chaos             | Gates survived            | Food columns with generous gap            | Is failure funny without being frustrating?                   |
+| Wheel of owe   | No skill or explanation needed        | Random score              | One luck score per player                 | Should this become direct payer selection?                    |
+| Pocket money   | Satisfying tactile shot               | Physics and aim           | One orange ball / one shot                | Is aiming too slow for the core loop?                         |
+| Bullseye bill  | Tension before release                | Three timed releases      | Two-stage aim / 30s per arrow / 300 max   | Does three-shot play feel quick enough?                       |
 
 The wheel intentionally differs from a direct random payer draw: each player spins and compares luck. This preserves a common score contract for the demo tournament. If retained, offer a direct draw for the fastest decision and keep per-player spins as a party variant.
 
@@ -40,7 +40,7 @@ Repeated mode reruns the same game; mixed mode cycles through the arcade startin
 
 ## Humour, motion, touch
 
-Keep the requested mean jokes aimed at gameplay and the wallet: “Your gameplay was a donation to everyone else’s evening.” Avoid personal attributes; allow a friendly/roast toggle in production. The demo has one roast, rotating wheel, moving game elements, button press feedback, and a bouncing reveal. Native hooks provide light impacts for inputs and a success pattern for finished turns/results. Web browsers may ignore vibration. Add reduced-motion handling, mute toggles, restrained haptic cadence for tap races, and a wider roast library before release.
+Keep the requested mean jokes aimed at gameplay and the wallet: “Your gameplay was a donation to everyone else’s evening.” Avoid personal attributes; allow a friendly/roast toggle in production. The demo has one roast, a labelled rotating wheel, independent race lanes and finish celebrations, falling tower blocks and offcuts, bow/arrow flight, confetti, button feedback, and a bouncing reveal. An original bundled arcade loop sets the vibe with an explicit music toggle. Native hooks provide light impacts for inputs and a success pattern for finished turns/results. Web browsers may ignore vibration. Add reduced-motion handling, mute toggles, restrained haptic cadence for tap races, and a wider roast library before release.
 
 ## Screens down
 
@@ -58,6 +58,10 @@ Run a six-person hangout, try every game once, then repeat only favourites. Obse
 
 - Demo (this repository): every candidate playable, local persistence, working room server, explicit limitations.
 - Playtest revision: refine physics and touch targets, original animation assets, haptic tuning, accessibility and reduced motion, deeper price data.
-- Multiplayer beta: persistent anonymous identity, reconnection, authoritative timing, synchronized countdowns and simultaneous tap races.
+- Multiplayer beta: persistent anonymous identity, reconnection, authoritative timing, synchronized countdowns and optional cross-device races.
 - Screens-down research: entitlement proof, on-device measurement validation, consent flow and a fairness review with real devices.
 - Store release: native build testing, original branded art, privacy policy matching actual data collection, monitoring, backend deployment and release automation.
+
+## Same-screen race revision
+
+Tap tap, broke is always a mini knockout tournament, even when mixed-game mode is off. Pair the crew in roster order; winners advance and odd players receive a visible bye. Each heat starts with a shared countdown. Both friends tap separate large pads on the same phone, with three quarter-distance checkpoints and a finish stripe at 60 taps. A 20-second cap keeps a slow heat moving; tied scores enter next-tap sudden death. Finish feedback includes a character overshoot, confetti and a heat winner card. In a connected room, run the shared-screen bracket on the host’s device.

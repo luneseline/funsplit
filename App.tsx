@@ -11,6 +11,7 @@ import {
   Platform,
   useWindowDimensions,
   Switch,
+  Linking,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,6 +23,7 @@ import {
   defaultConfig,
   newSession,
   submit,
+  submitRaceRound,
   standings,
   losers,
   winners,
@@ -33,6 +35,9 @@ import {
 } from "./src/model";
 import { C, s, Button, Chip, Character, GameArt, buzz } from "./src/ui";
 import Game from "./src/Game";
+import Race from "./src/games/Race";
+import { Burst } from "./src/games/shared";
+import { usePartyMusic, MusicButton } from "./src/music";
 type Ledger = {
   id: string;
   name: string;
@@ -51,6 +56,7 @@ const initial: Player[] = [
   { id: "p2", name: "Bestie", face: "ghost", color: C.orange },
 ];
 export default function App() {
+  const music = usePartyMusic();
   const { width } = useWindowDimensions(),
     wide = width > 850;
   const [tab, setTab] = useState("Arcade"),
@@ -249,6 +255,16 @@ export default function App() {
       );
     } else setSession(submit(session, session.players[session.turn].id, n));
   }
+  function raceScore(values: Record<string, number>) {
+    if (!session) return;
+    if (room)
+      socket.current?.emit(
+        "raceScores",
+        { sessionId: session.id, round: session.round, values },
+        (res: any) => res.error && setError(res.error),
+      );
+    else setSession(submitRaceRound(session, values));
+  }
   function reset() {
     if (room)
       socket.current?.emit(
@@ -281,7 +297,7 @@ export default function App() {
             backgroundColor: "#351E2899",
             alignItems: "center",
             justifyContent: "center",
-            padding: 16,
+            padding: width < 360 ? 2 : 16,
           }}
         >
           <View
@@ -297,15 +313,24 @@ export default function App() {
             }}
           >
             <ScrollView
-              contentContainerStyle={{ padding: wide ? 30 : 20, gap: 20 }}
+              scrollEnabled={
+                !(session?.phase === "playing" && roundGame(session) === "race")
+              }
+              contentContainerStyle={{
+                padding: wide ? 30 : width < 360 ? 4 : 12,
+                gap: 16,
+              }}
             >
-              <Pressable
-                accessibilityLabel="Close dialog"
-                onPress={onClose}
-                style={{ alignSelf: "flex-end", padding: 8 }}
-              >
-                <Text style={{ fontSize: 22, color: C.ink }}>✕</Text>
-              </Pressable>
+              <View style={[s.row, { justifyContent: "space-between" }]}>
+                <MusicButton music={music} />
+                <Pressable
+                  accessibilityLabel="Close dialog"
+                  onPress={onClose}
+                  style={{ alignSelf: "flex-end", padding: 8 }}
+                >
+                  <Text style={{ fontSize: 22, color: C.ink }}>✕</Text>
+                </Pressable>
+              </View>
               {children}
             </ScrollView>
           </View>
@@ -370,8 +395,9 @@ export default function App() {
               </Chip>
             ))}
           </View>
-          {wide && <Text style={s.eyebrow}>GOOD FRIENDS. BAD LOSERS.</Text>}
+          <MusicButton music={music} />
         </View>
+        {!!music.error && <Text style={s.muted}>{music.error}</Text>}
         {!!error && (
           <Pressable
             onPress={() => setError("")}
@@ -442,7 +468,7 @@ export default function App() {
                   </Button>
                   <View style={{ flexDirection: "row", marginLeft: 6 }}>
                     <View style={{ transform: [{ rotate: "-12deg" }] }}>
-                      <Character size={55} color={C.orange} />
+                      <Character animated size={55} color={C.orange} />
                     </View>
                     <View
                       style={{
@@ -450,7 +476,12 @@ export default function App() {
                         transform: [{ rotate: "15deg" }],
                       }}
                     >
-                      <Character size={55} face="ghost" color={C.blue} />
+                      <Character
+                        animated
+                        size={55}
+                        face="ghost"
+                        color={C.blue}
+                      />
                     </View>
                   </View>
                 </View>
@@ -942,13 +973,31 @@ export default function App() {
           session.phase === "playing" ? (
             <>
               <Text style={s.eyebrow}>
-                ROUND {session.round + 1}/{session.config.rounds} · PLAYER{" "}
-                {session.turn + 1}/{session.players.length}
+                ROUND {session.round + 1}/{session.config.rounds} ·{" "}
+                {roundGame(session) === "race"
+                  ? "SHARED SCREEN"
+                  : `PLAYER ${session.turn + 1}/${session.players.length}`}
               </Text>
               <Text style={[s.title, { fontSize: 30 }]}>
                 {games.find((g) => g.id === roundGame(session))?.name}
               </Text>
-              {!room || current?.id === socket.current?.id ? (
+              {roundGame(session) === "race" ? (
+                host ? (
+                  <Race
+                    key={`${session.id}-${session.round}`}
+                    players={session.players}
+                    onDone={raceScore}
+                  />
+                ) : (
+                  <View style={s.card}>
+                    <Text style={s.title}>Race on the host’s phone.</Text>
+                    <Text style={s.body}>
+                      Two friends tap the same screen. Gather around the host to
+                      play the bracket.
+                    </Text>
+                  </View>
+                )
+              ) : !room || current?.id === socket.current?.id ? (
                 <Game
                   key={`${session.id}-${session.round}-${session.turn}`}
                   id={roundGame(session)}
@@ -966,13 +1015,15 @@ export default function App() {
                 </View>
               )}
               <Text style={s.muted}>
-                Highest score wins. Lowest total rank points takes the bill.
-                Ties are shared.
+                {roundGame(session) === "race"
+                  ? "Winner advances · tied heats go to sudden death."
+                  : "Highest score wins. Lowest total rank points takes the bill. Ties are shared."}
               </Text>
               {!!error && <Text style={s.body}>{error}</Text>}
             </>
           ) : (
             <>
+              <Burst />
               <Text style={s.eyebrow}>THE VERDICT IS IN</Text>
               <Animated.View
                 style={{
@@ -1008,10 +1059,24 @@ export default function App() {
                   (v, i, a) => a.findIndex((o) => o.round === v.round) === i,
                 )
                 .map((v) => (
-                  <Text key={v.round} style={s.muted}>
-                    Price reveal · {prices[v.round % prices.length].name}: $
-                    {prices[v.round % prices.length].price.toLocaleString()} USD
-                  </Text>
+                  <View key={v.round} style={{ gap: 6 }}>
+                    <Text style={s.muted}>
+                      Price reveal · {prices[v.round % prices.length].name}: $
+                      {prices[v.round % prices.length].price.toLocaleString()}{" "}
+                      USD · US retail before tax · 10 Nov 2026
+                    </Text>
+                    <Pressable
+                      onPress={() =>
+                        Linking.openURL(prices[v.round % prices.length].source)
+                      }
+                    >
+                      <Text
+                        style={[s.muted, { textDecorationLine: "underline" }]}
+                      >
+                        View official product source →
+                      </Text>
+                    </Pressable>
+                  </View>
                 ))}
               {standings(session).map((p, i) => (
                 <View
