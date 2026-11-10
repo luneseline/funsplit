@@ -6,6 +6,7 @@ import {
   newSession,
   submit,
   submitRaceRound,
+  submitSharedRound,
   roundGame,
   games,
   type Session,
@@ -134,8 +135,8 @@ io.on("connection", (socket) => {
         r.session.round !== data.round
       )
         throw Error("This round has already moved on.");
-      if (roundGame(r.session) === "race")
-        throw Error("The host submits the shared-screen race bracket.");
+      if (["race", "wheel", "yapathon"].includes(roundGame(r.session)))
+        throw Error("The host submits this shared-screen round.");
       r.session = submit(r.session, socket.id, data.value);
       r.updated = Date.now();
       ack({ ok: true });
@@ -155,6 +156,26 @@ io.on("connection", (socket) => {
       )
         throw Error("This bracket has already moved on.");
       r.session = submitRaceRound(r.session, data.values);
+      r.updated = Date.now();
+      ack({ ok: true });
+      send();
+    }),
+  );
+  socket.on(
+    "sharedScores",
+    safe((data: any, ack: Function) => {
+      const r = rooms.get(code);
+      if (!r || r.host !== socket.id)
+        throw Error("Only the host can submit a shared-screen round.");
+      if (
+        !r.session ||
+        r.session.id !== data.sessionId ||
+        r.session.round !== data.round
+      )
+        throw Error("This shared round has already moved on.");
+      if (!["wheel", "yapathon"].includes(roundGame(r.session)))
+        throw Error("This is not a group round.");
+      r.session = submitSharedRound(r.session, data.values);
       r.updated = Date.now();
       ack({ ok: true });
       send();

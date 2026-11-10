@@ -1,6 +1,6 @@
 {
   "name": "funsplit",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Tiny party games that settle big group decisions",
   "main": "index.js",
   "scripts": {

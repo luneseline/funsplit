@@ -331,6 +331,65 @@ export function GameArt({ id }: { id: string }) {
         />
       </View>
     );
+  if (id === "yapathon")
+    return (
+      <View
+        style={{
+          width: 150,
+          height: 112,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <View
+          style={{
+            width: 118,
+            minHeight: 72,
+            borderRadius: 28,
+            borderWidth: 3,
+            borderColor: C.ink,
+            backgroundColor: C.paper,
+            padding: 14,
+            transform: [{ rotate: "-6deg" }],
+          }}
+        >
+          <Text
+            style={{
+              color: C.ink,
+              fontSize: 18,
+              fontWeight: "900",
+              textAlign: "center",
+            }}
+          >
+            YAP YAP YAP!
+          </Text>
+          <View
+            style={{
+              position: "absolute",
+              right: 12,
+              bottom: -15,
+              width: 0,
+              height: 0,
+              borderTopWidth: 18,
+              borderLeftWidth: 9,
+              borderRightWidth: 9,
+              borderTopColor: C.ink,
+              borderLeftColor: "transparent",
+              borderRightColor: "transparent",
+              transform: [{ rotate: "-24deg" }],
+            }}
+          />
+        </View>
+        <Text style={{ position: "absolute", left: 2, top: 5, fontSize: 24 }}>
+          ✦
+        </Text>
+        <Text
+          style={{ position: "absolute", right: 1, bottom: 7, fontSize: 25 }}
+        >
+          ☏
+        </Text>
+      </View>
+    );
   return (
     <Text
       style={{

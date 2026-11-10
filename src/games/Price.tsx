@@ -19,10 +19,12 @@ import { Badge, Ready } from "./shared";
 export default function Price({
   player,
   round,
+  itemId,
   onDone,
 }: {
   player: Player;
   round: number;
+  itemId?: string;
   onDone: (n: number) => void;
 }) {
   const [ready, setReady] = useState(false),
@@ -59,7 +61,8 @@ export default function Price({
       { rotate: `${-16 + seal.value * 8}deg` },
     ],
   }));
-  const item = prices[round % prices.length],
+  const item =
+      prices.find((q) => q.id === itemId) || prices[round % prices.length],
     valid =
       guess.trim() !== "" &&
       /^\d+(\.\d{1,2})?$/.test(guess) &&
@@ -112,7 +115,12 @@ export default function Price({
               floatStyle,
             ]}
           >
-            {photoFailed ? (
+            {!item.photo ? (
+              <View style={{ alignItems: "center", gap: 8 }}>
+                <Text style={{ fontSize: 92 }}>{item.emoji}</Text>
+                <Text style={s.eyebrow}>OFFLINE PRODUCT CARD</Text>
+              </View>
+            ) : photoFailed ? (
               <View style={{ padding: 25, gap: 10 }}>
                 <Text style={s.body}>
                   The product photo couldn’t load. Internet access is needed for
@@ -194,7 +202,10 @@ export default function Price({
           </View>
         </View>
         <View style={{ padding: 20, gap: 10, backgroundColor: C.paper }}>
-          <Text style={[s.eyebrow, { color: C.orange }]}>{item.brand}</Text>
+          <Text style={[s.eyebrow, { color: C.orange }]}>
+            {item.brand} · {item.category.toUpperCase()} ·{" "}
+            {item.difficulty.toUpperCase()}
+          </Text>
           <Text style={[s.title, { fontSize: 27 }]}>{item.name}</Text>
           <Text style={s.body}>{item.description}</Text>
           <Text style={s.muted}>{item.details}</Text>
@@ -265,8 +276,8 @@ export default function Price({
         </Button>
       )}
       <Text style={s.muted}>
-        US retail snapshot · 10 Nov 2026 · before tax. Prices vary by market.
-        Photo © Gucci. Source links appear in the final reveal.
+        {item.snapshot}. Prices can change; the dated source link appears in the
+        final reveal.
       </Text>
     </StateCard>
   );

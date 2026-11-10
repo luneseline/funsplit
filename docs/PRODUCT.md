@@ -8,7 +8,7 @@ The emotional rhythm is anticipation → tiny skill challenge → public suspens
 
 ## First-session flow
 
-1. Land in the arcade, see all seven games and a clear “Let’s settle it” action.
+1. Land in the arcade, see all nine games and a clear “Let’s settle it” action.
 2. Choose one phone or connected phones. Single-phone play starts with two editable names; no room setup required.
 3. Choose the stake: pay, eat, or watch. For eat/watch, enter a shortlist first; the winner earns the final pick. This makes the result actionable without pretending to know local restaurants or streaming availability.
 4. Choose a game, number of rounds, and whether to mix games. Defaults are one round and one game.
@@ -28,11 +28,12 @@ Two to eight people, 24-character names, four expressive original doodle charact
 | Tap tap, broke | Immediate frantic competition         | Tap rate over 10 seconds  | Same-screen knockout heats                | Is tapping tiring or fun at the table?                        |
 | Price of nice  | Surprise price reveal                 | Smallest absolute error   | Real designer photos and dated USD retail | Do people enjoy luxury, bill, or absurd-item categories most? |
 | Snack flight   | Familiar one-button chaos             | Gates survived            | Food columns with generous gap            | Is failure funny without being frustrating?                   |
-| Wheel of owe   | No skill or explanation needed        | Random score              | One luck score per player                 | Should this become direct payer selection?                    |
+| Wheel of owe   | No skill or explanation needed        | Fair wheel + hidden card  | Dynamic names and exactly one doom card   | Does the two-stage suspense stay quick enough?                |
+| Yapathon       | The room becomes the referee          | Talking under pressure    | 60s offline timer and manual call-out     | Do spectators stay engaged for every turn?                    |
 | Pocket money   | Satisfying tactile shot               | Physics and aim           | One orange ball / one shot                | Is aiming too slow for the core loop?                         |
 | Bullseye bill  | Tension before release                | Three timed releases      | Two-stage aim / 30s per arrow / 300 max   | Does three-shot play feel quick enough?                       |
 
-The wheel intentionally differs from a direct random payer draw: each player spins and compares luck. This preserves a common score contract for the demo tournament. If retained, offer a direct draw for the fastest decision and keep per-player spins as a party variant.
+The wheel first chooses the opening picker, then randomizes the remaining order independently from a hidden deck containing one doom card. Safe players receive a higher shared-round score so the existing tournament contract still works.
 
 ## Tournaments
 
@@ -52,7 +53,7 @@ For production, prototype OS capabilities before choosing the rule. iOS FamilyCo
 
 ## What to learn from the demo
 
-Run a six-person hangout, try every game once, then repeat only favourites. Observe time to first action, instruction rereads, average round duration, spectator laughter, perceived fairness, and willingness to rematch. Ask each person to keep three games and cut two. Do not collect analytics silently; start with an observation sheet. A strong v1 could ship three excellent games, the wheel, and one reliable decision flow instead of retaining all seven.
+Run a six-person hangout, try every game once, then repeat only favourites. Observe time to first action, instruction rereads, average round duration, spectator laughter, perceived fairness, and willingness to rematch. Ask each person to keep three games and cut two. Do not collect analytics silently; start with an observation sheet. A strong v1 could ship three excellent games, the wheel, and one reliable decision flow instead of retaining all nine.
 
 ## Delivery sequence
 

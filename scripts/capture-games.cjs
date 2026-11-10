@@ -15,11 +15,14 @@ const fs = require("node:fs");
       ["price", "Price of nice"],
       ["flight", "Snack flight"],
       ["wheel", "Wheel of owe"],
+      ["yapathon", "Yapathon"],
       ["pool", "Pocket money"],
       ["archery", "Bullseye bill"],
     ];
     for (const [id, name] of games) {
       await p.goto(process.env.DEMO_URL || "http://localhost:8081");
+      if (await p.getByLabel("Skip opening animation").isVisible())
+        await p.getByLabel("Skip opening animation").click();
       await p.getByText(name, { exact: true }).scrollIntoViewIfNeeded();
       await p.getByText(name, { exact: true }).click();
       await p.getByText("Game faces on →", { exact: true }).click();
@@ -35,8 +38,12 @@ const fs = require("node:fs");
             .getByLabel("Tap for Bestie")
             .dispatchEvent("pointerdown", { pointerId: 2 });
       } else if (id === "wheel") {
-        await p.getByText("Spin my fate ↻", { exact: true }).click();
-        await p.waitForTimeout(700);
+        await p.getByText("SPIN THE WHEEL ↻", { exact: true }).click();
+        await p
+          .getByText("THE WHEEL CHOSE FIRST PICK", { exact: true })
+          .waitFor();
+      } else if (id === "yapathon") {
+        await p.getByText("START YAPPING →", { exact: true }).click();
       } else {
         await p.getByText("I’m ready. Let’s play →", { exact: true }).click();
         if (id === "pool") {

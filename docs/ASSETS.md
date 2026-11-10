@@ -2,13 +2,20 @@
 
 The Price of Nice deck uses these exact product variants. US retail snapshots were checked on 10 November 2026, before tax. The game deliberately freezes these values so a round has one answer. They are not live quotes.
 
-| Product                                 | Style             | Snapshot (USD) | Official source                                                                                                                 |
+| Product                                 | Style             | Snapshot (USD) | Reference source                                                                                                                |
 | --------------------------------------- | ----------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | Gucci GG Marmont small shoulder bag     | 751526 AAFPP 1061 | 2,220          | [Gucci US](https://www.gucci.com/us/en/pr/women/handbags/mini-bags-for-women/gg-marmont-small-shoulder-bag-p-751526AAFPP1061)   |
 | Gucci GG Marmont wide belt              | 400593 AP00T 1000 | 570            | [Gucci US](https://www.gucci.com/us/en/pr/women/accessories-for-women/belts-for-women/gg-marmont-wide-belt-p-400593AP00T1000)   |
 | Gucci Ace sneaker with Web, beige/ebony | 760775 FACMZ 9746 | 760            | [Gucci US](https://www.gucci.com/us/en/pr/men/shoes-for-men/sneakers-for-men/mens-gucci-ace-sneaker-with-web-p-760775FACMZ9746) |
+| Apple AirPods Pro 3                     | Standard          | 249            | [Apple US](https://www.apple.com/shop/buy-airpods/airpods-pro-3)                                                                |
+| Netflix Premium, one month              | US monthly plan   | 24.99          | [Netflix Help](https://help.netflix.com/en/node/24926)                                                                          |
+| Stanley Quencher, 40 oz                 | Standard solid    | 45             | [Stanley 1913](https://www.stanley1913.com/products/adventure-quencher-travel-tumbler-40-oz)                                    |
+| Dyson Airwrap i.d.                      | Standard US set   | 599.99         | [Dyson US](https://www.dyson.com/hair-care/hair-stylers/airwrap-id)                                                             |
+| Starbucks Grande Caffè Latte            | Reference store   | 5.45           | [Starbucks menu](https://www.starbucks.com/menu/product/407/hot)                                                                |
+| Walt Disney World one-day ticket        | Starting price    | 119            | [Disney World](https://disneyworld.disney.go.com/admission/tickets/theme-parks/)                                                |
+| Supreme clay brick                      | Original retail   | 30             | [StockX reference](https://stockx.com/supreme-clay-brick-red)                                                                   |
 
-Photographs are linked from the official `media.gucci.com` image URLs associated with each product page, stored in `src/model.ts`. They are externally served and require internet; if the source is unavailable, the app displays an explicit retry state. Product photographs retain Gucci’s rights and are not part of the repository’s Apache licence. Descriptions are brief original summaries, not full copied listings. Source links are withheld until the verdict to avoid exposing answers before guesses.
+The three Gucci photographs are linked from the official `media.gucci.com` image URLs associated with each product page, stored in `src/model.ts`. They are externally served and require internet; if the source is unavailable, the app displays an explicit retry state. Other categories use local illustrated product cards and remain playable offline. Product photographs retain Gucci’s rights and are not part of the repository’s Apache licence. Descriptions are brief original summaries, not full copied listings. Source links are withheld until the verdict to avoid exposing answers before guesses.
 
 # Original assets
 

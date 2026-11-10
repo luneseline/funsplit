@@ -12,6 +12,7 @@ test("arcade, custom crew, two-player price round, payment persistence", async (
     "Price of nice",
     "Snack flight",
     "Wheel of owe",
+    "Yapathon",
     "Pocket money",
     "Bullseye bill",
   ])
@@ -23,12 +24,12 @@ test("arcade, custom crew, two-player price round, payment persistence", async (
   await page.getByText("Price of nice", { exact: true }).click();
   await page.getByText("Game faces on →", { exact: true }).click();
   await page.getByText("I’m ready. Let’s play →", { exact: true }).click();
-  await page.getByLabel("Price guess").fill("1000");
+  await page.getByLabel("Price guess").fill("100000");
   await page.getByText("Lock in guess", { exact: true }).click();
   await page.getByText("Save score & pass it on →", { exact: true }).click();
   await expect(page.getByText("Sam, you’re up.")).toBeVisible();
   await page.getByText("I’m ready. Let’s play →", { exact: true }).click();
-  await page.getByLabel("Price guess").fill("2220");
+  await page.getByLabel("Price guess").fill("0");
   await page.getByText("Lock in guess", { exact: true }).click();
   await page.getByText("Save score & pass it on →", { exact: true }).click();
   await expect(page.getByText("Alex, pay up.")).toBeVisible();
@@ -59,7 +60,9 @@ test("phone viewport and all non-price game arenas open", async ({ page }) => {
     await page.getByText(title, { exact: true }).last().waitFor();
     await page
       .getByText(
-        title === "Wheel of owe" ? "Spin my fate ↻" : "I’m ready. Let’s play →",
+        title === "Wheel of owe"
+          ? "SPIN THE WHEEL ↻"
+          : "I’m ready. Let’s play →",
         { exact: true },
       )
       .click();
@@ -93,18 +96,12 @@ test("every arcade game can finish and hand off a score", async ({ page }) => {
   for (const title of [
     "Stack attack",
     "Snack flight",
-    "Wheel of owe",
     "Pocket money",
     "Bullseye bill",
   ]) {
     await page.getByText(title, { exact: true }).click();
     await page.getByText("Game faces on →", { exact: true }).click();
-    await page
-      .getByText(
-        title === "Wheel of owe" ? "Spin my fate ↻" : "I’m ready. Let’s play →",
-        { exact: true },
-      )
-      .click();
+    await page.getByText("I’m ready. Let’s play →", { exact: true }).click();
     if (title === "Bullseye bill")
       for (let i = 0; i < 3; i++) {
         await page.getByLabel("Game arena").click();

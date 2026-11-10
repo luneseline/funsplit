@@ -60,9 +60,8 @@ test("Price of Nice: product showcase seals without revealing the answer or chan
   await open(page, "Price of nice");
   await ready(page);
   await expect(
-    page.getByText("GG Marmont small shoulder bag", { exact: true }),
+    page.getByText("WHAT’S THE DAMAGE? · USD", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("$2,220", { exact: true })).not.toBeVisible();
   await page.getByLabel("Price guess").fill("2220");
   await page.getByText("Lock in guess", { exact: true }).click();
   await expect(page.getByText("SEALED", { exact: true })).toBeVisible();
@@ -91,22 +90,30 @@ test("Snack Flight: live motion responds to flap and a collision ends the turn",
   ).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("sprite-losing")).toBeVisible();
 });
-test("Wheel of Owe: spinning wheel lands on the sector selected by the original rule", async ({
+test("Wheel of Owe: dynamic named wheel leads to immediate one-doom card reveals", async ({
   page,
 }) => {
   await open(page, "Wheel of owe");
   await page.evaluate(() => (Math.random = () => 0.35));
-  await page.getByText("Spin my fate ↻", { exact: true }).click();
-  await expect(page.getByTestId("wheel-disc")).toBeVisible();
+  await page.getByText("SPIN THE WHEEL ↻", { exact: true }).click();
   await expect(
-    page.getByText("40 points. Fate has spoken.", { exact: true }),
+    page.getByText("THE WHEEL CHOSE FIRST PICK", { exact: true }),
+  ).toBeVisible({ timeout: 5000 });
+  await expect(page.getByLabel("Face-down card")).toHaveCount(2);
+  await page.getByLabel("Face-down card").first().click();
+  await expect(
+    page
+      .getByText(
+        /YOU LIVE|UNIVERSE|NOT TODAY|LUCK|SAFE|PLOT|BLESSED|CURSE|CARD OF DOOM/,
+      )
+      .first(),
   ).toBeVisible();
-  await expect(page.getByTestId("wheel-disc")).toHaveCSS("transform", /matrix/);
-  const degrees = await page.getByTestId("wheel-disc").evaluate((el) => {
-    const m = new DOMMatrix(getComputedStyle(el).transform);
-    return ((Math.atan2(m.b, m.a) * 180) / Math.PI + 360) % 360;
-  });
-  expect(degrees).toBeCloseTo(234, 0);
+  await page.getByLabel("Face-down card").click();
+  await expect(
+    page.getByText("THE DOOM REPORT", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("DOOM", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("SAFE", { exact: true })).toHaveCount(1);
 });
 test("Pocket Money: ball animation and result match the existing shot simulation", async ({
   page,

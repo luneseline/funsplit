@@ -18,6 +18,7 @@ import { type Player } from "../model";
 import { createBracket, advanceBracket, bracketScores } from "../bracket";
 import { Button, C, s, Character, buzz } from "../ui";
 import { Badge, Burst } from "./shared";
+import { consumeRaceTouchStarts, releaseRaceTouches } from "../raceTouches";
 const FINISH = 60;
 export default function Race({
   players,
@@ -39,6 +40,7 @@ export default function Race({
     [elapsed, setElapsed] = useState(0),
     [winner, setWinner] = useState<number | null>(null),
     [trackWidth, setTrackWidth] = useState(280),
+    [padWidth, setPadWidth] = useState(300),
     [sudden, setSudden] = useState(false);
   const state = useRef({
       phase: "ready",
@@ -48,7 +50,8 @@ export default function Race({
       sudden: false,
       lastHud: -1,
     }),
-    move = [useSharedValue(0), useSharedValue(0)];
+    move = [useSharedValue(0), useSharedValue(0)],
+    activeTouches = useRef(new Set<number>());
   const pair = bracket.queue
     .slice(0, 2)
     .map((id) => players.find((p) => p.id === id)!);
@@ -118,6 +121,7 @@ export default function Race({
     if (v.counts[i] >= FINISH || v.sudden) finish(i);
   }
   function begin() {
+    activeTouches.current.clear();
     state.current.phase = "countdown";
     state.current.counts = [0, 0];
     setCounts([0, 0]);
@@ -129,6 +133,20 @@ export default function Race({
     });
     sound("whoosh");
     setPhase("countdown");
+  }
+  function nativeTouchStart(e: any) {
+    for (const lane of consumeRaceTouchStarts(
+      e.nativeEvent.changedTouches || [],
+      padWidth,
+      activeTouches.current,
+    ))
+      tap(lane);
+  }
+  function nativeTouchEnd(e: any) {
+    releaseRaceTouches(
+      e.nativeEvent.changedTouches || [],
+      activeTouches.current,
+    );
   }
   function next() {
     setBracket((b) =>
@@ -314,7 +332,23 @@ export default function Race({
           <Button onPress={next}>Continue bracket →</Button>
         </View>
       ) : (
-        <View style={{ flexDirection: "row", gap: 10 }}>
+        <View
+          onLayout={(e) => setPadWidth(e.nativeEvent.layout.width)}
+          {...(Platform.OS === "web"
+            ? {}
+            : {
+                onTouchStart: nativeTouchStart,
+                onTouchEnd: nativeTouchEnd,
+                onTouchCancel: nativeTouchEnd,
+              })}
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            gap: 18,
+            width: "100%",
+            paddingHorizontal: 2,
+          }}
+        >
           {pair.map((p, i) => (
             <View
               key={p.id}
@@ -334,20 +368,14 @@ export default function Race({
                     },
                     tabIndex: 0,
                   }
-                : {
-                    onTouchStart: (e: any) =>
-                      tap(
-                        i,
-                        Math.max(1, e.nativeEvent.changedTouches?.length || 1),
-                      ),
-                  })}
+                : { pointerEvents: "none" as const })}
               style={{
-                flex: 1,
+                width: "46%",
                 backgroundColor: i ? C.orange : C.yellow,
                 borderWidth: 2,
                 borderColor: C.ink,
                 borderRadius: 22,
-                minHeight: compact ? 92 : 124,
+                minHeight: compact ? 104 : 138,
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 4,

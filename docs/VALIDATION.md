@@ -25,8 +25,16 @@ npm run test:e2e
 EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 npx expo export --platform all --output-dir .native-check --max-workers 2
 ```
 
-Playwright uses `/usr/bin/chromium` unless `CHROMIUM_PATH` is set. The managed environment additionally redirects Expo's own cache into the workspace. Start `npm run web` before running `node scripts/capture-games.cjs` to refresh the seven screenshot artifacts.
+Playwright uses `/usr/bin/chromium` unless `CHROMIUM_PATH` is set. The managed environment additionally redirects Expo's own cache into the workspace. Start `npm run web` before running `node scripts/capture-games.cjs` to refresh the eight gameplay screenshot artifacts.
 
 ## v0.3.1 hotfix — 11 November 2026
 
 Fixed the native Worklets `invalidTransform` failure by routing SVG affine transforms to the native `matrix` prop instead of the React Native/CSS `transform` parser. Web uses equivalent SVG matrix strings. Fifteen Node tests pass, including three new tests for pivot geometry, native prop routing and web/native matrix equivalence. Five affected race, archery and pool browser checks pass, strict TypeScript checking passes, and Expo all-platform export completes for iOS, Android and web. These checks do not replace a fresh Expo Go test on the reporting phone. No vendor code, dependency versions, gameplay rules or scoring were changed.
+
+## v0.4 gameplay update — 11 November 2026
+
+- Strict TypeScript checking passes with no new dependencies.
+- **22 Node tests** cover the previous model, physics, SVG and room behaviour plus price freshness and exhaustion, one-doom deck invariants for 2–8 players, atomic shared scores, topic freshness, absolute-deadline timer arithmetic and a two-contact native race batch with touch-ID deduplication. The Socket.IO test verifies guests cannot submit shared rounds or bypass them with individual scores.
+- **17 Playwright tests** pass at desktop and 390×844 phone sizes. New coverage exercises the once-per-launch intro, a complete two-player Yapathon manual-callout round without microphone access, dynamic Wheel names/cards/immediate reveals, one-safe plus one-doom results, simultaneous race contacts and redesigned Snack Flight motion.
+- The timer uses an absolute wall-clock deadline and recalculates on AppState activation. Physical-device background suspension, native haptics, native multi-touch and frame pacing still require device testing.
+- The price bank uses dated source links. Retail prices and third-party pages can change and need editorial review before a store release.

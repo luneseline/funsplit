@@ -5,12 +5,12 @@ import Tower from "./games/Tower";
 import Price from "./games/Price";
 import Flight from "./games/Flight";
 import Pool from "./games/Pool";
-import Wheel from "./games/Wheel";
 export default function Game(props: {
   id: GameId;
   player: Player;
   onDone: (n: number) => void;
   round: number;
+  itemId?: string;
 }) {
   switch (props.id) {
     case "archery":
@@ -23,9 +23,7 @@ export default function Game(props: {
       return <Flight {...props} />;
     case "pool":
       return <Pool {...props} />;
-    case "wheel":
-      return <Wheel {...props} />;
     default:
-      throw Error("Shared-screen race is rendered by the session controller.");
+      throw Error("Shared-screen game is rendered by the session controller.");
   }
 }

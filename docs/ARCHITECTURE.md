@@ -8,7 +8,7 @@ Expo SDK 58 + React Native + TypeScript. The same RN component tree runs on iOS/
 App.tsx             navigation, setup, local storage, room client, results
 src/model.ts        typed game registry, match transitions, rank scoring
 src/Game.tsx         typed dispatcher to separate game components
-src/games/           seven live game components
+src/games/           nine live game components
 src/render/          worklet-safe physics, Reanimated FX, backgrounds, sprite states and pooled sounds
 src/bracket.ts       pure knockout bracket, byes, results
 src/Character.tsx    original SVG doodle characters
@@ -17,7 +17,7 @@ src/ui.tsx          palette, buttons, characters, haptic adapter
 server/index.ts     rooms, host authority, turn ownership, score acceptance
 ```
 
-Shared-screen race rounds submit a complete score map with `raceScores`. The server permits this event only from the host, verifies session/round/roster and applies all scores atomically. Individual `score` events are rejected during race rounds. Other screens tell the crew to gather around the host’s phone.
+Shared-screen race rounds submit a complete score map with `raceScores`; Wheel and Yapathon use the equivalent `sharedScores` event. The server permits these events only from the host, verifies session/round/roster and applies all scores atomically. Individual `score` events are rejected during every shared-screen round. Other screens tell the crew to gather around the host’s phone.
 
 The game registry is the candidate list: games can be removed from `games` after selection. Each produces a numeric score where higher is better. Price guesses become `max(0, 100000 - absoluteError)`. A shared pure transition function handles current player, round advancement, final result, and per-round rank points, so the local and network match follow the same rules.
 
@@ -43,11 +43,11 @@ A deployment needs a stable HTTPS Socket.IO endpoint, TLS termination supporting
 
 The graphics architecture was upgraded in v0.3; see [the full rendering audit](GRAPHICS.md). Continuous simulation/aim values live in Reanimated shared values. Flight and pool retain canonical 25ms simulation steps and project remaining frame time into rendering. Animated SVG props update moving balls, aim guides and crosshairs on the native UI runtime. Static SVG scenes use gradients and bounded repeated geometry for material detail. React is used for actual inputs, scores and discrete phase changes, with low-rate HUD text refreshes. Loop callbacks and repeating effects are cleaned up when leaving a scene.
 
-Pool retains equal-mass collision approximation, damping and discrete collision detection. Existing price decks and revealed answers are preserved. The new movement path is checked against frozen v0.2 flight/pool equations; all 460 legal billiards aim/power combinations match at the canonical timestep. Skia was evaluated and omitted to retain one cross-platform SVG scene renderer without CanvasKit. Reanimated handles motion, while Lottie is limited to a small native reward burst with a procedural web equivalent.
+Pool retains equal-mass collision approximation, damping and discrete collision detection. The price deck is expanded through typed, dated entries while preserving free-form guesses and the existing score equation. The movement path is checked against frozen v0.2 flight/pool equations; all 460 legal billiards aim/power combinations match at the canonical timestep. Skia was evaluated and omitted to retain one cross-platform SVG scene renderer without CanvasKit. Reanimated handles motion, while Lottie is limited to a small native reward burst with a procedural web equivalent.
 
 ## Storage and results
 
-AsyncStorage holds local crew and confirmed paid counts. No server-side payment ledger or money movement exists. A match completion never increments a count automatically. A production history should store immutable events (session ID, payer UUID, timestamp, optional user-entered amount/currency), derive totals, prevent duplicate confirmations, support undo and export, and preserve identity across name changes. Current “recorded” protection applies to the visible result; it is not a durable financial audit trail. A room host can reset/rematch while each phone keeps its own payment history.
+AsyncStorage holds local crew, confirmed paid counts, recent price-question IDs and recent Yapathon topics. No server-side payment ledger or money movement exists. A match completion never increments a count automatically. A production history should store immutable events (session ID, payer UUID, timestamp, optional user-entered amount/currency), derive totals, prevent duplicate confirmations, support undo and export, and preserve identity across name changes. Current “recorded” protection applies to the visible result; it is not a durable financial audit trail. A room host can reset/rematch while each phone keeps its own payment history.
 
 ## Screens-down native boundary
 

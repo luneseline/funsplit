@@ -19,12 +19,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { io, Socket } from "socket.io-client";
 import {
   games,
-  prices,
   faces,
   defaultConfig,
   newSession,
   submit,
   submitRaceRound,
+  submitSharedRound,
+  selectPriceQuestions,
+  priceForRound,
   standings,
   losers,
   winners,
@@ -37,8 +39,11 @@ import {
 import { C, s, Button, Chip, Character, GameArt, buzz } from "./src/ui";
 import Game from "./src/Game";
 import Race from "./src/games/Race";
+import Wheel from "./src/games/Wheel";
+import Yapathon from "./src/games/Yapathon";
 import { Burst } from "./src/games/shared";
 import { usePartyMusic, MusicButton } from "./src/music";
+import LaunchIntro from "./src/LaunchIntro";
 type Ledger = {
   id: string;
   name: string;
@@ -77,6 +82,8 @@ export default function App() {
     [ready, setReady] = useState(false),
     [disconnect, setDisconnect] = useState(false),
     [tieChoice, setTieChoice] = useState("");
+  const [showIntro, setShowIntro] = useState(true);
+  const [priceRecent, setPriceRecent] = useState<string[]>([]);
   const socket = useRef<Socket | null>(null),
     bounce = useRef(new Animated.Value(0)).current;
   const [focus, setFocus] = useState(false),
@@ -87,7 +94,11 @@ export default function App() {
     [focusDone, setFocusDone] = useState(false);
   const restored = useRef(false);
   useEffect(() => {
-    AsyncStorage.multiGet(["funsplit.players", "funsplit.ledger"])
+    AsyncStorage.multiGet([
+      "funsplit.players",
+      "funsplit.ledger",
+      "funsplit.priceRecent",
+    ])
       .then((rows) => {
         for (const [key, val] of rows)
           if (val) {
@@ -97,6 +108,7 @@ export default function App() {
                 if (key.endsWith("players") && parsed.length >= 2)
                   setPlayers(parsed);
                 if (key.endsWith("ledger")) setLedger(parsed);
+                if (key.endsWith("priceRecent")) setPriceRecent(parsed);
               }
             } catch {}
           }
@@ -124,6 +136,23 @@ export default function App() {
         () => setError("Could not save the leaderboard."),
       );
   }, [ledger]);
+  useEffect(() => {
+    if (
+      !session ||
+      session.phase !== "playing" ||
+      roundGame(session) !== "price"
+    )
+      return;
+    const id = priceForRound(session, session.round).id;
+    setPriceRecent((old) => {
+      if (old[0] === id) return old;
+      const next = [id, ...old.filter((v) => v !== id)].slice(0, 8);
+      AsyncStorage.setItem("funsplit.priceRecent", JSON.stringify(next)).catch(
+        () => {},
+      );
+      return next;
+    });
+  }, [session?.id, session?.round, session?.phase]);
   useEffect(() => {
     if (session?.phase === "result") {
       setRecorded(false);
@@ -196,7 +225,9 @@ export default function App() {
         else setSetup(false);
       });
     } else {
-      setSession(newSession(players, config));
+      const next = newSession(players, config);
+      next.priceOrder = selectPriceQuestions(priceRecent, config.rounds);
+      setSession(next);
       setSetup(false);
     }
   }
@@ -265,6 +296,16 @@ export default function App() {
         (res: any) => res.error && setError(res.error),
       );
     else setSession(submitRaceRound(session, values));
+  }
+  function sharedScore(values: Record<string, number>) {
+    if (!session) return;
+    if (room)
+      socket.current?.emit(
+        "sharedScores",
+        { sessionId: session.id, round: session.round, values },
+        (res: any) => res.error && setError(res.error),
+      );
+    else setSession(submitSharedRound(session, values));
   }
   function reset() {
     if (room)
@@ -547,7 +588,7 @@ export default function App() {
                 </Text>
               </View>
               <Text style={s.muted}>
-                7 games · 2–8 friends · endless “one more”
+                {games.length} games · 2–8 friends · endless “one more”
               </Text>
             </View>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 16 }}>
@@ -985,7 +1026,7 @@ export default function App() {
             <>
               <Text style={s.eyebrow}>
                 ROUND {session.round + 1}/{session.config.rounds} ·{" "}
-                {roundGame(session) === "race"
+                {["race", "wheel", "yapathon"].includes(roundGame(session))
                   ? "SHARED SCREEN"
                   : `PLAYER ${session.turn + 1}/${session.players.length}`}
               </Text>
@@ -1008,12 +1049,38 @@ export default function App() {
                     </Text>
                   </View>
                 )
+              ) : roundGame(session) === "wheel" ||
+                roundGame(session) === "yapathon" ? (
+                host ? (
+                  roundGame(session) === "wheel" ? (
+                    <Wheel
+                      key={`${session.id}-${session.round}`}
+                      players={session.players}
+                      onDone={sharedScore}
+                    />
+                  ) : (
+                    <Yapathon
+                      key={`${session.id}-${session.round}`}
+                      players={session.players}
+                      onDone={sharedScore}
+                    />
+                  )
+                ) : (
+                  <View style={s.card}>
+                    <Text style={s.title}>Gather around the host’s phone.</Text>
+                    <Text style={s.body}>
+                      This whole-group round plays together on one shared
+                      screen.
+                    </Text>
+                  </View>
+                )
               ) : !room || current?.id === socket.current?.id ? (
                 <Game
                   key={`${session.id}-${session.round}-${session.turn}`}
                   id={roundGame(session)}
                   player={current!}
                   round={session.round}
+                  itemId={priceForRound(session, session.round).id}
                   onDone={score}
                 />
               ) : (
@@ -1026,8 +1093,10 @@ export default function App() {
                 </View>
               )}
               <Text style={s.muted}>
-                {roundGame(session) === "race"
-                  ? "Winner advances · tied heats go to sudden death."
+                {["race", "wheel", "yapathon"].includes(roundGame(session))
+                  ? roundGame(session) === "race"
+                    ? "Winner advances · tied heats go to sudden death."
+                    : "Whole-group game · pass the host phone around the table."
                   : "Highest score wins. Lowest total rank points takes the bill. Ties are shared."}
               </Text>
               {!!error && <Text style={s.body}>{error}</Text>}
@@ -1072,13 +1141,13 @@ export default function App() {
                 .map((v) => (
                   <View key={v.round} style={{ gap: 6 }}>
                     <Text style={s.muted}>
-                      Price reveal · {prices[v.round % prices.length].name}: $
-                      {prices[v.round % prices.length].price.toLocaleString()}{" "}
-                      USD · US retail before tax · 10 Nov 2026
+                      Price reveal · {priceForRound(session, v.round).name}: $
+                      {priceForRound(session, v.round).price.toLocaleString()}{" "}
+                      USD · {priceForRound(session, v.round).snapshot}
                     </Text>
                     <Pressable
                       onPress={() =>
-                        Linking.openURL(prices[v.round % prices.length].source)
+                        Linking.openURL(priceForRound(session, v.round).source)
                       }
                     >
                       <Text
@@ -1249,6 +1318,7 @@ export default function App() {
             setFocusRunning(false);
           },
         )}
+      {showIntro && <LaunchIntro onFinish={() => setShowIntro(false)} />}
     </View>
   );
 }

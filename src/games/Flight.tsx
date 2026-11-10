@@ -15,6 +15,8 @@ import Svg, {
   LinearGradient,
   Stop,
   Circle,
+  G,
+  Text as ST,
 } from "react-native-svg";
 import { type Player } from "../model";
 import { Button, C, s, buzz } from "../ui";
@@ -164,40 +166,28 @@ export default function Flight({
             style={[
               {
                 position: "absolute",
-                left: 0,
+                left: -15,
                 top: 0,
-                width: 42,
-                borderBottomLeftRadius: 17,
-                borderBottomRightRadius: 17,
-                overflow: "hidden",
-                borderWidth: 2,
-                borderColor: C.ink,
-                backgroundColor: "#F5AB58",
+                width: 72,
               },
               top,
             ]}
           >
-            <Food type="pizza" />
+            <SnackTower side="top" />
           </Animated.View>
           <Animated.View
             pointerEvents="none"
             style={[
               {
                 position: "absolute",
-                left: 0,
+                left: -15,
                 bottom: 0,
-                width: 42,
-                borderTopLeftRadius: 17,
-                borderTopRightRadius: 17,
-                overflow: "hidden",
-                borderWidth: 2,
-                borderColor: C.ink,
-                backgroundColor: C.yellow,
+                width: 72,
               },
               bottom,
             ]}
           >
-            <Food type="burger" />
+            <SnackTower side="bottom" />
           </Animated.View>
           {[0, 1, 2, 3].map((i) => (
             <AirTrail key={i} world={world} i={i} />
@@ -256,68 +246,134 @@ export default function Flight({
     </StateCard>
   );
 }
-function Food({ type }: any) {
+function SnackTower({ side }: { side: "top" | "bottom" }) {
+  const bob = useSharedValue(0);
+  useEffect(() => {
+    bob.value = withTiming(1, { duration: 900 });
+  }, []);
+  const sway = useAnimatedStyle(() => ({
+    transform: [
+      { rotate: `${side === "top" ? -2 : 2}deg` },
+      { translateX: bob.value * (side === "top" ? 1 : -1) },
+    ],
+  }));
   return (
-    <Svg
-      width="100%"
-      height="100%"
-      viewBox="0 0 42 180"
-      preserveAspectRatio="none"
+    <Animated.View
+      style={[{ width: "100%", height: "100%", overflow: "hidden" }, sway]}
     >
-      <Defs>
-        <LinearGradient id={`food-${type}`}>
-          <Stop stopColor={type === "pizza" ? "#FFE391" : "#E6BC46"} />
-          <Stop
-            offset="1"
-            stopColor={type === "pizza" ? "#D25C36" : "#A15A27"}
-          />
-        </LinearGradient>
-      </Defs>
-      <Rect width="42" height="180" fill={`url(#food-${type})`} />
-      {Array.from({ length: 6 }, (_, i) =>
-        type === "pizza" ? (
-          <React.Fragment key={i}>
-            <Circle
-              cx={i % 2 ? 28 : 12}
-              cy={18 + i * 28}
-              r="6"
-              fill="#C54B35"
-              stroke="#8F3A2E"
-              strokeWidth="1"
-            />
-            <Path
-              d={`M${i % 2 ? 10 : 28} ${20 + i * 28} l4 -4`}
-              stroke="#6C823C"
-              strokeWidth="2"
-            />
-          </React.Fragment>
-        ) : (
-          <React.Fragment key={i}>
-            <Rect
-              x="0"
-              y={10 + i * 29}
-              width="42"
-              height="10"
-              rx="3"
-              fill="#684336"
-            />
-            <Path
-              d={`M0 ${24 + i * 29} l8 -3 l8 5 l8 -5 l8 5 l10 -3`}
-              stroke="#8BAB50"
-              strokeWidth="5"
-            />
-            <Line
-              x1="0"
-              x2="42"
-              y1={18 + i * 29}
-              y2={18 + i * 29}
-              stroke="#FFDA60"
-              strokeWidth="3"
-            />
-          </React.Fragment>
-        ),
-      )}
-    </Svg>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 72 240"
+        preserveAspectRatio="xMidYMax slice"
+      >
+        {Array.from({ length: 7 }, (_, i) => {
+          const y = side === "top" ? i * 36 - 3 : 240 - i * 36 - 30;
+          const kind = (i + (side === "top" ? 0 : 2)) % 4;
+          if (kind === 0)
+            return (
+              <G
+                key={i}
+                transform={`translate(${i % 2 ? 8 : 18} ${y}) rotate(${i % 2 ? 7 : -6})`}
+              >
+                <Path
+                  d="M2 2 L47 16 L11 34 Z"
+                  fill="#FFD568"
+                  stroke={C.ink}
+                  strokeWidth="2"
+                />
+                <Path
+                  d="M2 2 Q24 -4 47 16"
+                  stroke="#B96A31"
+                  strokeWidth="6"
+                  fill="none"
+                />
+                <Circle cx="20" cy="15" r="4" fill={C.orange} />
+                <Circle cx="32" cy="21" r="4" fill={C.orange} />
+              </G>
+            );
+          if (kind === 1)
+            return (
+              <G
+                key={i}
+                transform={`translate(${i % 2 ? 18 : 7} ${y}) rotate(${i % 2 ? -8 : 5})`}
+              >
+                <Circle
+                  cx="24"
+                  cy="18"
+                  r="17"
+                  fill="#ECA75A"
+                  stroke={C.ink}
+                  strokeWidth="2"
+                />
+                <Circle
+                  cx="24"
+                  cy="18"
+                  r="7"
+                  fill="#D7EFFF"
+                  stroke={C.ink}
+                  strokeWidth="2"
+                />
+                <Path
+                  d="M10 11 Q24 1 39 12"
+                  stroke="#F58AB0"
+                  strokeWidth="6"
+                  fill="none"
+                />
+              </G>
+            );
+          if (kind === 2)
+            return (
+              <G
+                key={i}
+                transform={`translate(${i % 2 ? 8 : 20} ${y}) rotate(${i % 2 ? 5 : -7})`}
+              >
+                <Path
+                  d="M4 12 Q25 -3 46 12 L42 21 L8 21Z"
+                  fill="#E2A245"
+                  stroke={C.ink}
+                  strokeWidth="2"
+                />
+                <Path
+                  d="M7 22 L44 22 L39 29 L11 29Z"
+                  fill="#684336"
+                  stroke={C.ink}
+                  strokeWidth="2"
+                />
+                <Path d="M9 19 L43 19" stroke="#8BAB50" strokeWidth="5" />
+              </G>
+            );
+          return (
+            <G
+              key={i}
+              transform={`translate(${i % 2 ? 19 : 9} ${y}) rotate(${i % 2 ? -5 : 8})`}
+            >
+              <Path
+                d="M5 7 L42 7 L38 34 L9 34Z"
+                fill={i % 2 ? C.orange : "#D92F45"}
+                stroke={C.ink}
+                strokeWidth="2"
+              />
+              <Path
+                d="M13 5 L15 -8 M21 6 L23 -10 M29 6 L33 -7 M36 7 L41 -5"
+                stroke="#FFD857"
+                strokeWidth="4"
+              />
+              <ST
+                x="24"
+                y="26"
+                textAnchor="middle"
+                fontSize="8"
+                fontWeight="900"
+                fill={C.paper}
+              >
+                FRIES
+              </ST>
+            </G>
+          );
+        })}
+      </Svg>
+    </Animated.View>
   );
 }
 function AirTrail({ world, i }: any) {
