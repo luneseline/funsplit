@@ -1,3 +1,5 @@
+import { svgMatrixProps } from "./render/svgTransform";
+import { rotateAbout } from "./render/svgTransformMath";
 import React, { useEffect, useId } from "react";
 import Svg, {
   Path,
@@ -69,18 +71,48 @@ export default function Character({
       cancelAnimation(blink);
     };
   }, [animationState, reduced, animated, animateCharacter]);
-  const leftArm = useAnimatedProps(() => ({
-      transform: `rotate(${animationState === "winning" ? 45 + Math.sin(cycle.value) * 10 : animationState === "interacting" ? 30 + Math.sin(cycle.value) * 28 : Math.sin(cycle.value) * (animationState === "moving" ? 32 : 5)} 32 66)`,
-    })),
-    rightArm = useAnimatedProps(() => ({
-      transform: `rotate(${animationState === "winning" ? -45 - Math.sin(cycle.value) * 10 : -Math.sin(cycle.value) * (animationState === "moving" ? 32 : 7)} 70 66)`,
-    })),
-    leftLeg = useAnimatedProps(() => ({
-      transform: `rotate(${Math.sin(cycle.value) * (animationState === "moving" ? 28 : 2)} 38 80)`,
-    })),
-    rightLeg = useAnimatedProps(() => ({
-      transform: `rotate(${-Math.sin(cycle.value) * (animationState === "moving" ? 28 : 2)} 65 80)`,
-    })),
+  const leftArm = useAnimatedProps(() =>
+      svgMatrixProps(
+        rotateAbout(
+          animationState === "winning"
+            ? 45 + Math.sin(cycle.value) * 10
+            : animationState === "interacting"
+              ? 30 + Math.sin(cycle.value) * 28
+              : Math.sin(cycle.value) * (animationState === "moving" ? 32 : 5),
+          32,
+          66,
+        ),
+      ),
+    ),
+    rightArm = useAnimatedProps(() =>
+      svgMatrixProps(
+        rotateAbout(
+          animationState === "winning"
+            ? -45 - Math.sin(cycle.value) * 10
+            : -Math.sin(cycle.value) * (animationState === "moving" ? 32 : 7),
+          70,
+          66,
+        ),
+      ),
+    ),
+    leftLeg = useAnimatedProps(() =>
+      svgMatrixProps(
+        rotateAbout(
+          Math.sin(cycle.value) * (animationState === "moving" ? 28 : 2),
+          38,
+          80,
+        ),
+      ),
+    ),
+    rightLeg = useAnimatedProps(() =>
+      svgMatrixProps(
+        rotateAbout(
+          -Math.sin(cycle.value) * (animationState === "moving" ? 28 : 2),
+          65,
+          80,
+        ),
+      ),
+    ),
     eyes = useAnimatedProps(() => ({ ry: blink.value })),
     idle = useAnimatedStyle(() => ({
       transform: [

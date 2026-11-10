@@ -66,3 +66,9 @@ These are screenshots of the running games, not static design replacements. Pric
 ## Final export footprint
 
 The final Expo all-platform export produced a 1.6 MB uncompressed web JavaScript bundle and approximately 3.1 MB Hermes bytecode bundles for each native platform. The six new WAV effects plus original Lottie JSON occupy about 84 KB on disk. This is an explicit bundle-size tradeoff for Reanimated/Worklets/Lottie; Skia/CanvasKit, Rive and the optional dotLottie web player are absent. These sizes are export measurements, not device memory or FPS benchmarks. Lobby character loops are disabled behind active game/setup panels, and static avatar previews do not run limb/blink loops.
+
+## v0.3.1 native SVG transform correction
+
+Animated SVG groups now receive six-number affine `matrix` props on native, matching `react-native-svg`'s Fabric group interface. Web receives equivalent SVG `matrix(...)` strings. This avoids passing SVG-only pivot rotation syntax into Reanimated's View/CSS transform parser, which rejected the old strings and raised the Worklets remote-call error while formatting `invalidTransform`. Limb pivots, crosshair positions and ball positions use the same geometry as before. No vendor packages or gameplay rules are patched.
+
+Regression tests check every limb pivot, native prop routing without a `transform` key, and native/web coordinate equivalence. Existing archery, pool and race browser checks cover the affected call sites.

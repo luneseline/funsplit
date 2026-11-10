@@ -1,3 +1,5 @@
+import { svgMatrixProps } from "../render/svgTransform";
+import { translateSvg } from "../render/svgTransformMath";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -171,9 +173,9 @@ export default function Archery({
       }
     })();
   }
-  const crossProps = useAnimatedProps(() => ({
-      transform: `translate(${ax.value} ${ay.value})`,
-    })),
+  const crossProps = useAnimatedProps(() =>
+      svgMatrixProps(translateSvg(ax.value, ay.value)),
+    ),
     xProps = useAnimatedProps(() => ({ x1: ax.value, x2: ax.value })),
     yProps = useAnimatedProps(() => ({ y1: ay.value, y2: ay.value }));
   const bowProps = useAnimatedProps(() => ({

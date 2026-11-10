@@ -1,3 +1,5 @@
+import { svgMatrixProps } from "../render/svgTransform";
+import { translateSvg } from "../render/svgTransformMath";
 import React, { useEffect, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import Animated, {
@@ -401,7 +403,7 @@ function BallSprite({ world, acc, kind }: any) {
     const b = world.value[kind],
       dt = acc.value / 1000;
     return {
-      transform: `translate(${b.x + b.vx * dt} ${b.y + b.vy * dt})`,
+      ...svgMatrixProps(translateSvg(b.x + b.vx * dt, b.y + b.vy * dt)),
       opacity: kind === "ball" && world.value.ball.pocketed ? 0 : 1,
     };
   });

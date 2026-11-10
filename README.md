@@ -29,6 +29,8 @@ Use **Connect our phones**, enter a reachable server URL (for example `http://19
 
 The host starts and configures games. Each player controls their own turn from their own screen. Other screens show who is playing. Most connected games use individual turns. **Tap tap, broke is a shared-screen knockout bracket:** two friends play simultaneously on the host’s phone, then the host posts the whole bracket’s results to the room. Disconnecting a player returns the room to its lobby and transfers hosting if needed. Rooms live in server memory and expire after six hours. This server is a working demo, not a deployed service.
 
+**v0.3.1 fixes the native Worklets `invalidTransform` error.** Pull the update and restart Metro with `npx expo start --go --clear`.
+
 ## Graphics upgrade (v0.3)
 
 Every game now uses the shared motion/effects layer. Continuous flight, billiards, crane aim and crosshair movement use Reanimated shared values and frame callbacks instead of forcing React redraws. Gameplay constants, scores and multiplayer rules are preserved. Effects include articulated character states, layered scenery, shaded materials, bounded particles, animated counters, checkpoint pulses, bow/cue recoil, transitions and six original event-driven sound cues. Use **SFX ON/OFF** separately from the music toggle.

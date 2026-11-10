@@ -26,3 +26,7 @@ EXPO_OFFLINE=1 EXPO_NO_TELEMETRY=1 npx expo export --platform all --output-dir .
 ```
 
 Playwright uses `/usr/bin/chromium` unless `CHROMIUM_PATH` is set. The managed environment additionally redirects Expo's own cache into the workspace. Start `npm run web` before running `node scripts/capture-games.cjs` to refresh the seven screenshot artifacts.
+
+## v0.3.1 hotfix — 11 November 2026
+
+Fixed the native Worklets `invalidTransform` failure by routing SVG affine transforms to the native `matrix` prop instead of the React Native/CSS `transform` parser. Web uses equivalent SVG matrix strings. Fifteen Node tests pass, including three new tests for pivot geometry, native prop routing and web/native matrix equivalence. Five affected race, archery and pool browser checks pass, strict TypeScript checking passes, and Expo all-platform export completes for iOS, Android and web. These checks do not replace a fresh Expo Go test on the reporting phone. No vendor code, dependency versions, gameplay rules or scoring were changed.
