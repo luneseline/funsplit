@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "funsplit",
+    "slug": "funsplit",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": { "supportsTablet": true, "bundleIdentifier": "app.funsplit.party" },
+    "android": { "package": "app.funsplit.party" },
+    "web": { "bundler": "metro", "name": "funsplit" }
+  }
+}

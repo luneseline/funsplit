@@ -1,0 +1,51 @@
+# Architecture and engineering roadmap
+
+## Current implementation
+
+Expo SDK 58 + React Native + TypeScript. The same RN component tree runs on iOS/Android and via React Native Web. The server is Node + Socket.IO. No paid service, API key, external database, or cloud account is required to play locally.
+
+```
+App.tsx             navigation, setup, local storage, room client, results
+src/model.ts        typed game registry, match transitions, rank scoring
+src/Game.tsx         seven playable game engines / arenas
+src/ui.tsx          palette, buttons, characters, haptic adapter
+server/index.ts     rooms, host authority, turn ownership, score acceptance
+```
+
+The game registry is the candidate list: games can be removed from `games` after selection. Each produces a numeric score where higher is better. Price guesses become `max(0, 100000 - absoluteError)`. A shared pure transition function handles current player, round advancement, final result, and per-round rank points, so the local and network match follow the same rules.
+
+Connected rooms carry configuration, roster, and an optional match snapshot. Host-only start/reset events prevent guests from resetting other players’ rounds. Scores carry session ID and round; the server rejects wrong players, non-finite values and stale submissions. Scores are bounded to 0–100000. Duplicate events cannot advance the same turn twice. Payload size and per-socket event rates are limited. Room codes use cryptographic randomness; these codes are invitations, not authentication credentials.
+
+## Network lifecycle
+
+Client connects → creates or joins room → host starts → current player plays locally → submits score → server advances → room snapshot broadcasts → next device becomes active → final snapshot shows result.
+
+All demo game simulation runs on the active client. The server validates the match transition, not whether the score was honestly earned. This is suitable for friends testing prototypes; do not use it for cash stakes or competitive ranking. There is no anti-cheat guarantee. Host disconnect transfers leadership and resets the match. Any player disconnect resets the match rather than leaving a blocked turn. Room memory disappears when the server restarts.
+
+A deployment needs a stable HTTPS Socket.IO endpoint, TLS termination supporting polling/WebSocket upgrade, explicit `ALLOWED_ORIGIN`, instance health checks, and process supervision. Native clients do not gain authentication from CORS. No hosted endpoint is provisioned by this repository. A single instance is sufficient for this demo. Do not put different instances behind a load balancer without sticky sessions and a shared room adapter.
+
+## Production multiplayer
+
+1. Issue a local anonymous player UUID plus a signed, short-lived room membership/reconnect token. Store reconnect credentials in platform secure storage. Separate player identity from socket ID.
+2. Assign monotonic event sequence numbers, idempotency keys, and a server round clock. Add bounded reconnect grace, ready acknowledgements and recoverable match snapshots.
+3. For simultaneous games, distribute a future server start timestamp after every device acknowledges assets/readiness. Estimate clock offset and make countdowns consistent.
+4. Move scoring-relevant simulation to the server or replay timestamped validated inputs. Rate-limit taps and reject impossible acceleration, timing or score growth. Deterministic random seeds make replay verification possible for obstacles and wheel events.
+5. Add Redis for transient rooms and a Socket.IO adapter only when running multiple server instances. Keep durable payment history opt-in; a local ledger is enough for an account-free app.
+
+## Games and performance
+
+The demo updates the small arena at 40 Hz using React state; delta time is capped after suspension. This is a simple readable prototype. Before shipping, move physics to a fixed timestep and render motion via Reanimated/Skia or another UI-thread renderer. Measure low-end Android performance and touch-to-response latency. Pool uses equal-mass collision approximation, damping and discrete collision detection; high-speed continuous collision detection and better object separation are future work. Make seeded obstacle sequences consistent across competitors. Price decks should be locked per round and hidden until all guesses arrive in connected play.
+
+## Storage and results
+
+AsyncStorage holds local crew and confirmed paid counts. No server-side payment ledger or money movement exists. A match completion never increments a count automatically. A production history should store immutable events (session ID, payer UUID, timestamp, optional user-entered amount/currency), derive totals, prevent duplicate confirmations, support undo and export, and preserve identity across name changes. Current “recorded” protection applies to the visible result; it is not a durable financial audit trail. A room host can reset/rematch while each phone keeps its own payment history.
+
+## Screens-down native boundary
+
+Do not equate AppState background time with phone usage: locked and idle phones can be in the background. Current web mode logs only manual check-ins. Native demo additionally records app-away time for a selected person and clearly says what this measures.
+
+A native spike should define a `UsageMonitor` interface (`authorization`, `begin`, `sample`, `end`) and separate iOS/Android modules. Determine entitlement eligibility first, then validate the exact event semantics. Run explicit cases: screen locked, always-on display, notification shade, another app, incoming call, low-power mode, force quit, permission revoked, offline device and clock changes. Do not enable automatic payer selection until missing/ambiguous measurements have an agreed fallback.
+
+## Before release
+
+Native CI/EAS builds; iOS/Android device coverage; larger text and screen-reader checks; reduced-motion/haptic preferences; result confetti budget; correct safe-area handling on cutout devices; persistent reconnect; input validation and malformed payload handling; server telemetry without names or gameplay payloads; encrypted transport; an actual price content licence/source; original art/audio rights; history management and undo. Keep all cloud/backend secrets out of `EXPO_PUBLIC_*` values, which are bundled into the client.
